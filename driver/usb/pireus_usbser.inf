@@ -1,0 +1,63 @@
+;===============================================================
+; Bematech/Logic Controls MP-4200 Driver
+; for Windows XP/Vista/7
+; Copyright (c) 2010, Bematech International.
+;
+; Model: MP-4200
+; Driver type: USB device port with virtual serial port
+;
+;===============================================================
+
+[Version]                                                       ; Version section
+Signature=$WINDOWS NT$
+Class=Ports                                                     ; This is a serial port driver
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}                ; Associated GUID
+Provider=%Bematech%                                             ; Driver is provided by Bematech
+CatalogFile=pireus_usbser.cat
+DriverVer=02/09/2010,2.0.0.0                                    ; 
+
+[DestinationDirs]                                               ; DestinationDirs section
+DefaultDestDir=12                                               ; Default install directory is \drivers or \IOSubSys
+
+[Manufacturer]                                                  ; Manufacturer section
+%Bematech%=BematechMfg, NTamd64                                          ; Only one manufacturer (Bematech), models section is named
+
+[BematechMfg]                                                   ; Models section corresponding to Bematech
+%PireusUSBDevice%=Pireus.Install,USB\VID_0B1B&PID_0003          ; Identifies a device with Bematech Vendor ID (0B1Bh) and
+
+[BematechMfg.NTamd64]                                                   ; Models section corresponding to Bematech
+%PireusUSBDevice%=Pireus.Install,USB\VID_0B1B&PID_0003          ; Identifies a device with Bematech Vendor ID (0B1Bh) and
+
+[SourceDisksFiles]
+
+[SourceDisksNames]
+
+
+[Pireus.Install]                                                ; Install section
+include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+AddReg=Pireus.AddReg                                            ; Registry keys to add are listed in Pireus.AddReg
+
+[Pireus.AddReg]                                                 ; AddReg section
+HKR,,"UpperFilters",0x00010000,"serenum"
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,usbser.sys
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+HKR,,PortSubClass,1,01
+
+
+
+[Pireus.Install.Services]                                       ; Services section
+AddService=usbser,0x00000002,Pireus.AddService                  ; Assign usbser as the PnP driver for the device
+
+[Pireus.AddService]                                             ; Service install section
+DisplayName=%PireusUSBName%                                     ; Name of the serial driver
+ServiceType=1                                                   ; Service kernel driver
+StartType=3                                                     ; Driver is started by the PnP manager
+ErrorControl=1                                                  ; Warn about errors
+ServiceBinary=%12%\usbser.sys                                   ; Driver filename
+
+[Strings]                                                       ; Strings section
+Bematech="Bematech / Logic Controls Inc"                                             ; String value for the Bematech symbol
+PireusUSBDevice="MP-4200 TH Virtual COM"                        ; String value for the Pireus USB Device symbol
+PireusUSBName="MP-4200 TH Virtual Com"                          ; String value for the Pireus USB Name symbol
