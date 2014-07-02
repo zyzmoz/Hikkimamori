@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2014/07/02 09:06:19.159.pas,C:\Users\Prog1\Documents\Borland Studio Projects\Unit1.pas=C:\Hikkimamori\untMain.pas</Transaction>
+    <Transaction>2014/07/02 09:06:19.159.dfm,C:\Users\Prog1\Documents\Borland Studio Projects\Unit1.dfm=C:\Hikkimamori\untMain.dfm</Transaction>
+    <Transaction>2014/07/02 09:06:28.904.bdsproj,C:\Users\Prog1\Documents\Borland Studio Projects\Project1.bdsproj=C:\Hikkimamori\Hikkimamori.bdsproj</Transaction>
+    <Transaction>2014/07/02 09:22:08.618.pas,C:\Hikkimamori\bematech_imp.pas=C:\Hikkimamori\impressao.pas</Transaction>
+    <Transaction>2014/07/02 11:03:28.268.pas,C:\Hikkimamori\Unit1.pas=C:\Hikkimamori\funcoes.pas</Transaction>
+  </Transactions>
+</BorlandProject>

@@ -1,0 +1,193 @@
+unit bematech_imp;
+
+interface
+uses declaracoes,  ibquery, DB, Forms, sysutils, controls, windows;
+
+function Bematech_Pequeno(aTexto : string):integer;
+function Bematech_Normal(aTexto : string):integer;
+function Bematech_Grande(aTexto : string):integer;
+function Bematech_lestatus():integer;
+Procedure IniciaImp;
+
+implementation
+
+function Bematech_Pequeno ( aTexto : string):integer;
+begin
+  if trim(atexto) <> '' then
+  begin
+    aTexto := aTexto + #13 + #10;
+    Bematech_Pequeno := FormataTX(pchar(aTexto), 1, 0, 0, 0, 0);
+  end;
+end;
+
+function Bematech_Normal ( aTexto : string):integer;
+begin
+  if trim( atexto ) <> '' then
+  begin
+    aTexto := aTexto + #13 + #10;
+    Bematech_normal := FormataTX(pchar(aTexto), 2, 0, 0, 0, 0);
+  end;
+end;
+
+
+function Bematech_Grande ( aTexto : string): integer;
+begin
+  if trim( atexto ) <> '' then
+  begin
+    aTexto := aTexto + #13 + #10;
+    Bematech_grande := FormataTX(pchar(aTexto), 3, 0, 0, 0, 0);
+  end;
+end;
+
+
+function Bematech_lestatus():integer;
+var
+  i_status: integer;
+  s_stporta: String;
+begin
+// ANÁLISE DO RETORNO DE STATUS DAS IMPRESSORAS FISCAIS
+
+if s_porta='COM1' then s_stporta:='serial';
+if s_porta='COM2' then s_stporta:='serial';
+if s_porta='COM3' then s_stporta:='serial';
+if s_porta='COM4' then s_stporta:='serial';
+if s_porta='lpt1' then s_stporta:='lpt';
+if s_porta='lpt2' then s_stporta:='lpt';
+if s_porta='Ethernet' then s_stporta:='rede';
+
+i_retorno:=Le_Status();
+
+//******************IMPRESSORAS MP 20 CI E MI - CONEXÃO SERIAL******************
+
+  if (i_modelo=1) and (s_stporta='serial') then
+    Begin
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - ON LINE';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - OFF LINE';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - SEM PAPEL';
+    End;
+//******************************************************************************
+
+//******************IMPRESSORAS MP 20 CI E MI - CONEXÃO PARALELA****************
+
+  if (i_modelo=1) and (s_stporta='lpt') then
+    Begin
+    if i_retorno= 144 then frm_pdvloja.lbl_status.Caption:='144 - ON LINE';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - OFF LINE OU IMP. SEM PAPEL';
+    End;
+//******************************************************************************
+
+//******IMPRESSORAS MP 20 TH, 2000 CI 2000 TH 2100 TH - CONEXÃO SERIAL**********
+
+  if (i_modelo=0) and (s_stporta='serial') then
+    Begin
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - OFF LINE';
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - ON LINE OU POUCO PAPEL';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - IMP. SEM PAPEL';
+    End;
+//******************************************************************************
+
+//******IMPRESSORAS MP 20 TH, 2000 CI 2000 TH 2100 TH - CONEXÃO PARALELA********
+
+  if (i_modelo=0) and (s_stporta='lpt') then
+    Begin
+    if i_retorno= 79 then frm_pdvloja.lbl_status.Caption:='79 - OFF LINE';
+    if i_retorno= 144 then frm_pdvloja.lbl_status.Caption:='144 - ON LINE OU POUCO PAPEL';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - IMP. SEM PAPEL';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - ERRO DE COMUNICAÇÃO';
+    End;
+//******************************************************************************
+
+//******************IMPRESSORAS MP 4000 TH CONEXÃO PARALELA*********************
+
+  if (i_modelo=5) and (s_stporta='lpt') then
+    Begin
+    if i_retorno= 40 then frm_pdvloja.lbl_status.Caption:='40 - IMP. OFF LINE/SEM COMUNICAÇÃO';
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - IMPRESSORA ON LINE';
+    if i_retorno= 128 then frm_pdvloja.lbl_status.Caption:='128 - IMP. SEM PAPEL';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - POUCO PAPEL';
+    End;
+//******************************************************************************
+
+//******************IMPRESSORAS MP 4000 TH CONEXÃO ETHERNET*********************
+
+  if (i_modelo=5) and (s_stporta='rede') then
+    Begin
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - IMPRESSORA ON LINE';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - IMP. OFF LINE/SEM COMUNICAÇÃO';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - IMP. SEM PAPEL';
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - ON LINE - POUCO PAPEL';
+    End;
+//******************************************************************************
+
+//******************IMPRESSORAS MP 4000 TH CONEXÃO SERIAL***********************
+
+  if (i_modelo=5) and (s_stporta='serial') then
+    Begin
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - IMPRESSORA ON LINE';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - IMP. OFF LINE/SEM COMUNICAÇÃO';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - IMP. SEM PAPEL';
+    if i_retorno= 5 then frm_pdvloja.lbl_status.Caption:='5 - ON LINE - POUCO PAPEL';
+    End;
+//******************************************************************************
+
+//*********************IMPRESSORAS MP 4000 TH CONEXÃO USB***********************
+
+  if (i_modelo=5) and (s_stporta='serial') then
+    Begin
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - IMPRESSORA ON LINE';
+    if i_retorno= 68 then frm_pdvloja.lbl_status.Caption:='68 - IMP. OFF LINE/SEM COMUNICAÇÃO';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - IMP. SEM PAPEL';
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - ON LINE - POUCO PAPEL';
+    End;
+//******************************************************************************
+
+//*******************IMPRESSORAS MP 4200 TH CONEXÃO TODAS***********************
+
+  if (i_modelo=7) then
+    Begin
+    if i_retorno= 24 then frm_pdvloja.lbl_status.Caption:='24 - IMPRESSORA ON LINE';
+    if i_retorno= 0 then frm_pdvloja.lbl_status.Caption:='0 - IMP. OFF LINE/SEM COMUNICAÇÃO';
+    if i_retorno= 32 then frm_pdvloja.lbl_status.Caption:='32 - IMP. SEM PAPEL';
+    if i_retorno= 5 then frm_pdvloja.lbl_status.Caption:='5 - ON LINE - POUCO PAPEL';
+    if i_retorno= 9 then frm_pdvloja.lbl_status.Caption:='9 - TAMPA ABERTA';
+    End;
+//******************************************************************************
+
+
+end;
+
+Procedure IniciaImp;
+begin
+  Application.CreateForm(Tfrm_configurapdv, frm_configurapdv);
+  ConfiguraModeloImpressora(i_modelo);
+  i_retorno := IniciaPorta(pchar(s_porta));
+  if i_retorno <> 1 then
+  begin
+    Application.MessageBox('Sem conexão com a impressora','Erro!',0);
+    frm_pdvloja.lbl_status.Caption:='0 - OFF LINE';
+    exit;
+  end;
+  Bematech_lestatus;
+  if frm_configurapdv.edt_path_bmp_esp.Text <> '' then
+  begin
+    i_retorno:= ImprimeBmpEspecial( pchar(frm_configurapdv.edt_path_bmp_esp.Text),
+                                    strtoint(frm_configurapdv.edt_x.Text),
+                                    strtoint(frm_configurapdv.edt_y.Text),
+                                    strtoint(frm_configurapdv.edt_angulo.Text));
+  end;
+  DM_Pdv.IBQ_Empresa.Open;
+  Bematech_Normal(alinhaCentro(Length(DM_Pdv.IBQ_EmpresaEMPRESA.AsString)) + DM_Pdv.IBQ_EmpresaEMPRESA.AsString);
+  Bematech_Normal(alinhaCentro(Length(DM_Pdv.IBQ_EmpresaENDERECO.AsString + ', ' +DM_Pdv.IBQ_EmpresaNUMERO.AsString)) +
+                  DM_Pdv.IBQ_EmpresaENDERECO.AsString + ', ' +DM_Pdv.IBQ_EmpresaNUMERO.AsString );
+  Bematech_Normal(alinhaCentro(Length(DM_Pdv.IBQ_EmpresaBAIRRO.AsString+' - '+DM_Pdv.IBQ_EmpresaCIDADE.AsString+' - '+DM_Pdv.IBQ_EmpresaUF.AsString)) +
+                  DM_Pdv.IBQ_EmpresaBAIRRO.AsString+' - '+DM_Pdv.IBQ_EmpresaCIDADE.AsString+' - '+DM_Pdv.IBQ_EmpresaUF.AsString);
+  Bematech_Normal( alinhaCentro(Length(' Telefone: '+DM_Pdv.IBQ_EmpresaTELEFONE.AsString)) +
+                                       ' Telefone: '+DM_Pdv.IBQ_EmpresaTELEFONE.AsString);
+  Bematech_Normal( alinhaCentro(Length(DM_Pdv.IBQ_EmpresaEMAIL.AsString)) + trim(DM_Pdv.IBQ_EmpresaEMAIL.AsString));
+end;
+
+
+
+
+
+end.
