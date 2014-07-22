@@ -14,7 +14,6 @@ function LeIni( dados, campo : string): string;
 procedure GeraIniTemp(dados, campo, aTexto: string);
 function LeIniTemp( dados, campo : string): string;
 function Alltrim(const Search: string): string;
-function RoundSemArredondar(valor : Double):Double;
 procedure Configurar;
 
 implementation
@@ -191,23 +190,5 @@ begin
     ArqIni.Free;
   end;
 end;
-
-function RoundSemArredondar(valor : Double):Double;
-var
-  reais, centavos : String;
-begin
-  if Pos(',',FloatToStr(valor)) >0 then
-    reais := copy(FloatToStr(valor),1, Pos(',',FloatToStr(valor))-1)
-  else
-    reais := copy(FloatToStr(valor),1,Length(FloatToStr(valor)));
-
-  if Pos(',',FloatToStr(valor)) >0  then
-    centavos := '0' + copy(FloatToStr(valor),Pos(',',FloatToStr(valor)),3)
-  else
-    centavos := '0,00';
-  RoundSemArredondar := StrToFloat(reais) + StrToFloat(Centavos);
-
-end;
-
 
 end.

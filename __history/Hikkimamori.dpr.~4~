@@ -5,8 +5,7 @@ uses
   untMain in 'untMain.pas' {Form1},
   impressao in 'impressao.pas',
   declaracoes in 'declaracoes.pas',
-  funcoes in 'funcoes.pas',
-  charPrinter in 'charPrinter.pas';
+  funcoes in 'funcoes.pas';
 
 {$R *.res}
 

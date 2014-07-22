@@ -21,8 +21,6 @@ type
     Button7: TButton;
     Button8: TButton;
     Button9: TButton;
-    Button10: TButton;
-    procedure Button10Click(Sender: TObject);
     procedure Button9Click(Sender: TObject);
     procedure Button8Click(Sender: TObject);
     procedure Button7Click(Sender: TObject);
@@ -59,11 +57,6 @@ end;
 procedure TForm1.BitBtn2Click(Sender: TObject);
 begin
   AdicionaForma('DINHEIRO', 3);
-end;
-
-procedure TForm1.Button10Click(Sender: TObject);
-begin
-ShowMessage(#120);//+#0+#60+#120);
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);

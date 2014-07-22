@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Buttons, Printers, WinSpool;
+  Dialogs, StdCtrls, Buttons;
 
 type
   TForm1 = class(TForm)
@@ -21,8 +21,6 @@ type
     Button7: TButton;
     Button8: TButton;
     Button9: TButton;
-    Button10: TButton;
-    procedure Button10Click(Sender: TObject);
     procedure Button9Click(Sender: TObject);
     procedure Button8Click(Sender: TObject);
     procedure Button7Click(Sender: TObject);
@@ -42,7 +40,6 @@ type
 
 var
   Form1: TForm1;
-  HPrinter : THandle;
 
 implementation
 
@@ -61,11 +58,6 @@ begin
   AdicionaForma('DINHEIRO', 3);
 end;
 
-procedure TForm1.Button10Click(Sender: TObject);
-begin
-ShowMessage(#120);//+#0+#60+#120);
-end;
-
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   Configurar;
@@ -73,7 +65,7 @@ end;
 
 procedure TForm1.Button2Click(Sender: TObject);
 begin
-  AtivaImpressora(hImpPadrao,hGenericText,hUSB);
+  AtivaImpressora(hBematech,hMP4200TH,hUSB);
   IniciaImp(hVenda,1,1,'TESTE');
 end;
 
@@ -100,20 +92,19 @@ begin
 end;
 
 procedure TForm1.Button7Click(Sender: TObject);
-
 begin
   AbreGaveta(hImpPadrao,hGenericText,hUSB);
 end;
 
 procedure TForm1.Button8Click(Sender: TObject);
 begin
-  AtivaImpressora(hImpPadrao,hGenericText,hUSB);
+  AtivaImpressora(hBematech,hMP4200TH,hUSB);
   ImprimeBarras('789789789789');
 end;
 
 procedure TForm1.Button9Click(Sender: TObject);
 begin
-  AtivaImpressora(hImpPadrao,hGenericText,hUSB);
+  AtivaImpressora(hBematech,hMP4200TH,hUSB);
   ImprimeQR('123ABC');
 end;
 

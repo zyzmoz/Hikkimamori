@@ -124,7 +124,7 @@
 			<Directories Name="PackageDLLOutputDir"></Directories>
 			<Directories Name="PackageDCPOutputDir"></Directories>
 			<Directories Name="SearchPath"></Directories>
-			<Directories Name="Packages">vcl;vclx;dbrtl;Rave65VCL;bdertl;rtl;vcldb;adortl;dbxcds;dbexpress;vclib;ibxpress;xmlrtl;vclactnband;inet;IntrawebDB_80_100;Intraweb_80_100;vclie;inetdbbde;inetdbxpress;IndyCore;IndySystem;dclOfficeXP;VclSmp;soaprtl;dsnap;IndyProtocols;vcldbx;dsnapcon;websnap;webdsnap;rxdb;rxctl;rxbde;ACBrComum;ACBrDiversos;ACBr_NFe2;PCN2;synapse;ACBrCapicom;ACBrOpenSSL;ACBrNFeDanfeRV;Package1;pckUCGlobal;pckMD5;pckUserControl_RT;pckUCDataConnector;pckUCIBXConn;ACBrSerial;VDOPrint;Package2;dxCoreD10;dxGDIPlusD10;cxLibraryD10;cxEditorsD10;dxThemeD10;cxDataD10;cxExtEditorsD10;dxBarD10;dxBarDBNavD10;dxBarExtDBItemsD10;dxBarExtItemsD10;dxRibbonD10;cxBarEditItemD10;dxdbtrD10;dxtrmdD10;dxmdsD10;dxDockingD10;dxFlowChartD10;cxPageControlD10;dxLayoutControlD10;dxComnD10;dxMasterViewD10;dxNavBarD10;dxorgcD10;dxdborD10;cxGridD10;cxPivotGridD10;cxPivotGridChartD10;cxPivotGridOLAPD10;cxTreeListD10;cxTreeListdxBarPopupMenuD10;cxSchedulerD10;cxSchedulerGridD10;dxsbD10;dcldxSkinsCoreD10;dxSkinsCoreD10;dxSkinscxPCPainterD10;dxSkinscxScheduler3PainterD10;dxSkinsdxDLPainterD10;dxSkinsdxBarPainterD10;dxSkinsdxNavBar2PainterD10;dxSpellCheckerD10;cxSpreadSheetD10;cxVerticalGridD10;dxPSCoreD10;dxPSLnksD10;dxPScxCommonD10;dxPScxExtCommonD10;dxPScxGrid6LnkD10;dxPScxPivotGrid2LnkD10;dxPScxScheduler3LnkD10;dxPScxSSLnkD10;dxPScxTL5LnkD10;dxPScxVGridLnkD10;dxPSTeeChartD10;tee;teedb;dxPSDBTeeChartD10;dxPSdxOCLnkD10;dxPSdxDBOCLnkD10;dxPSdxDBTVLnkD10;dxPSdxFCLnkD10;dxPSdxLC2LnkD10;dxPSdxMVLnkD10;dxPScxPCProdD10;dxPsPrVwAdvD10;dxPSPrVwRibbonD10;dxSkinsdxRibbonPainterD10;QR5RunD2006</Directories>
+			<Directories Name="Packages"></Directories>
 			<Directories Name="Conditionals"></Directories>
 			<Directories Name="DebugSourceDirs"></Directories>
 			<Directories Name="UsePackages">False</Directories>
@@ -170,14 +170,8 @@
 			<VersionInfoKeys Name="ProductName"></VersionInfoKeys>
 			<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
 			<VersionInfoKeys Name="Comments"></VersionInfoKeys>
-		</VersionInfoKeys>  <Excluded_Packages>
-      <Excluded_Packages Name="C:\Program Files (x86)\Borland\BDS\4.0\QuickRep\bpl\QR4DesignD2006.bpl">File C:\Program Files (x86)\Borland\BDS\4.0\QuickRep\bpl\QR4DesignD2006.bpl not found</Excluded_Packages>
-      <Excluded_Packages Name="c:\program files (x86)\borland\bds\4.0\Bin\dcltee100.bpl">TeeChart Components</Excluded_Packages>
-      <Excluded_Packages Name="C:\Users\Prog1\Documents\Borland Studio Projects\Bpl\Package3.bpl">File C:\Users\Prog1\Documents\Borland Studio Projects\Bpl\Package3.bpl not found</Excluded_Packages>
-      <Excluded_Packages Name="C:\Users\Prog1\Documents\Borland Studio Projects\Bpl\4.0\ACBr_CTe.bpl">File C:\Users\Prog1\Documents\Borland Studio Projects\Bpl\4.0\ACBr_CTe.bpl not found</Excluded_Packages>
-      <Excluded_Packages Name="C:\Users\Prog1\Documents\Borland Studio Projects\Bpl\4.0\ACBrNFeDanfeRVCodeBase.bpl">File C:\Users\Prog1\Documents\Borland Studio Projects\Bpl\4.0\ACBrNFeDanfeRVCodeBase.bpl not found</Excluded_Packages>
-    </Excluded_Packages>
-  </Delphi.Personality>
+		</VersionInfoKeys>
+	</Delphi.Personality>
 	<StarTeamAssociation></StarTeamAssociation>
 	<StarTeamNonRelativeFiles></StarTeamNonRelativeFiles>
 </BorlandProject>

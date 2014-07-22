@@ -1,7 +1,7 @@
 object Form1: TForm1
   Left = 0
   Top = 0
-  Caption = 'Z'
+  Caption = 'Form1'
   ClientHeight = 306
   ClientWidth = 554
   Color = clBtnFace
@@ -85,10 +85,10 @@ object Form1: TForm1
     end
   end
   object GroupBox2: TGroupBox
-    Left = 223
+    Left = 231
     Top = 0
     Width = 114
-    Height = 249
+    Height = 177
     Caption = 'Extra'
     TabOrder = 2
     object Button5: TButton
@@ -109,32 +109,5 @@ object Form1: TForm1
       TabOrder = 1
       OnClick = Button7Click
     end
-    object Button8: TButton
-      Left = 10
-      Top = 78
-      Width = 89
-      Height = 25
-      Caption = 'Imprime Barras'
-      TabOrder = 2
-      OnClick = Button8Click
-    end
-    object Button9: TButton
-      Left = 10
-      Top = 109
-      Width = 89
-      Height = 25
-      Caption = 'Imprime QR'
-      TabOrder = 3
-      OnClick = Button9Click
-    end
-  end
-  object Button10: TButton
-    Left = 408
-    Top = 192
-    Width = 75
-    Height = 25
-    Caption = 'Button10'
-    TabOrder = 3
-    OnClick = Button10Click
   end
 end

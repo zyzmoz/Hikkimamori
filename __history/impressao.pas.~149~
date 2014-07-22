@@ -342,13 +342,12 @@ begin
       begin
         AssignFile(Arq, 'item.txt');
         Reset(Arq);
-        prn.OpenDoc('Itens');
         while not Eof(Arq) do
         begin
+
           Readln(Arq, aLinha);
           Prn_Normal( copy ( aLinha, 1, Length(aLinha)));
         end;
-        prn.CloseDoc;
         CloseFile(Arq);
         while FileExists('item.txt') do
           DeleteFile('item.txt');
@@ -937,7 +936,6 @@ begin
 
     end;
     hImpPadrao:begin
-      prn.OpenDoc('Fim');
       Prn_Normal(Traco(47));
       case tipo of
         hVenda:begin
@@ -961,76 +959,21 @@ begin
 
           Prn_Normal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
           if Recebido > Total then
-            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
-
-          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-          begin
-            Prn_Normal(Traco(47));
-            AssignFile(Arq, 'hCliente.txt');
-            Reset(Arq);
-            while not Eof(Arq) do
-            begin
-              Readln(Arq, aLinha);
-              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-            end;
-            CloseFile(Arq);
-            while FileExists('hCliente.txt') do
-              DeleteFile('hCliente.txt');
+            Prn_Normal('Troco'+ FormatFloat('#,##0.00',(Recebido-Total)));
           end;
-        end;
-        hConsignacao:begin
-          Prn_Normal('Total Consignado.:     '+ aLinhaDireita(FormatFloat('#,##0.00',Total),20)) ;
-          Prn_Normal(Traco(47));
-          Prn_Normal('Consignado em nome de ' + LeIniTemp('CLIENTE','NOME'));
-          Prn_Normal('CPF/CNPJ.: '+ LeIniTemp('CLIENTE','CNPJCPF')+ '  RG/IE: ' + LeIniTemp('CLIENTE', 'IERG'));
-          if LeIniTemp('IMP','NUMERO') = '1' then
-          begin
-            prn_normal('');
-            prn_normal('');
-            prn_normal('');
-            Prn_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
-            Prn_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
+          hConsignacao:begin
+            Prn_Normal('Valor da Total    '+ FormatFloat('#,##0.00',Total)) ;
           end;
-        end;
-        hRecibo:begin
-          Prn_Normal('Recebemos de:' + LeIniTemp('CLIENTE', 'NOME'));
-          Prn_Normal('O valor de ' + FormatFloat('#,##0.00',Total));
-          Prn_Normal(LeIniTemp('PARCELAS', 'TOTALEXT'));
-          if Desconto > 0 then
-            Prn_Normal('C/ desconto de :' + FormatFloat('#,##0.00',Desconto));
-          Prn_Normal(Traco(47));
-          Prn_Normal('Referente a:');
-          Prn_Normal('Venda    Vencimento       Valor');
-          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-          begin
-            AssignFile(Arq, 'hparcelas.txt');
-            Reset(Arq);
-            while not Eof(Arq) do
-            begin
-              Readln(Arq, aLinha);
-              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-            end;
-            CloseFile(Arq);
-            while FileExists('hparcelas.txt') do
-              DeleteFile('hparcelas.txt');
-          end;
-          Prn_Normal(Traco(47));
-          Prn_Normal('Forma de Pagamento: ' + LeIniTemp('PARCELAS','FORMA'));
-          prn_normal('');
-          prn_normal('');
-          Prn_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
-          Prn_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
-        end;
-        hCarne:begin
+          hRecibo:begin
 //            Prn_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
+          end;
+          hCarne:begin
+//            Prn_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
+          end;
         end;
-      end;
-      while FileExists('temp.txt') do
-        DeleteFile('temp.txt');
-      while FileExists('Temp.ini') do
-            DeleteFile('Temp.ini');
-      aSubTotal := 0;
-      prn.CloseDoc;
+        while FileExists('temp.txt') do
+          DeleteFile('temp.txt');
+        aSubTotal := 0;
     end;
   end;
 
@@ -1062,8 +1005,8 @@ begin
 
     end;
     hImpPadrao:begin
-      prn_comando(#27+#112+#0+#60+#120);
-      prn_comando(#27+#118+#140);
+      prn_comando(#27 + #118 + #140);
+      
     end;
 
   end;
@@ -1108,8 +1051,6 @@ begin
     hImpPadrao:begin
       aSubTotal := 0;
       aImpressora := impressora;
-      aModelo := modelo;
-      aPorta := porta;
       prn := TAdvancedPrinter.Create;
       prn.OpenDoc('Impressão Documentos');
     end;
@@ -1140,10 +1081,6 @@ begin
     hImpPadrao:begin
       aSubTotal := 0;
       aImpressora := setImpressora(impressora);
-      aModelo := setModelo(modelo);
-      aPorta := setPorta(porta);
-      prn := TAdvancedPrinter.Create;
-      prn.OpenDoc('Impressão Documentos');
     end;
   end;
 end;
@@ -1256,7 +1193,7 @@ begin
       end;
       hImpPadrao:begin
         AtivaImpressora(aImpressora,aModelo, aPorta);
-        prn_comando(#27+#109);
+        prn_comando(#27#109);
       end;
     end;
   end;

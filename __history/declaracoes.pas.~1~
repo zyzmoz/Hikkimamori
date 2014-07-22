@@ -41,7 +41,6 @@ function ImprimeCodigoBarrasISBN( Codigo: string ): integer; stdcall; far; exter
 function ImprimeCodigoBarrasMSI( Codigo: string ): integer; stdcall; far; external 'MP2032.DLL';
 function ImprimeCodigoBarrasPLESSEY( Codigo: string ): integer; stdcall; far; external 'MP2032.DLL';
 function ImprimeCodigoBarrasPDF417( NivelCorrecaoErros: integer; Altura: integer; Largura: integer; Colunas: integer; Codigo: string ): integer; stdcall; far; external 'MP2032.DLL';
-function ImprimeCodigoQRCODE(errorCorrectionLevel: integer; moduleSize: integer; codeType: integer; QRCodeVersion: integer; encodingModes: integer; codeQr: string): integer; stdcall; far; external 'MP2032.DLL';
 
 // Funções para impressão de BitMap
 

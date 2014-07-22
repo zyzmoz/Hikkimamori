@@ -1,0 +1,4 @@
+Codigo...:1
+Cliente..:TESTE
+Endereco.:Rua 1 Nr 48
+Bairro...:Bairro
