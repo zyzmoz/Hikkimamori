@@ -320,9 +320,9 @@ begin
   case fLang of
     lngEPFX   : SendData (#27+'@'+#27+'2'+#27+'P'+#18);
     lngESCP2  : SendData (#27+'@'+#27+'O'+#27+'2'+#27+'C0'+#11+#27+'!'+ #0);
-    lngESCPOS : SendData (#27+ '@' (*+ #29 + #249 + #31 + #49*) );
+    lngESCPOS : SendData (#27+ '@' + #29 + #249 + #31 + #49 );
     lngHPPCL  : SendData (#27+'E'+#27+'&l2A'+#27+'&l0O'+#27+'&l6D'+#27+'(s4099T'+#27+'(s0P'+#27+'&k0S'+#27+'(s0S');
-    lngESCBEMA: SendData (#27+ '@'+#29+#249+#32+#0+#27+#116+#8);
+    lngESCBEMA: SendData (#29#249#32#0#27#116#8);
   end;
 end;
 
@@ -341,7 +341,7 @@ end;
 constructor TAdvancedPrinter.Create;
 begin
 inherited Create;
-  fLang := lngESCPOS;
+  fLang := lngESCP2;
   fFontSize := pfs10cpi;
   fTextStyle := [];
 end;

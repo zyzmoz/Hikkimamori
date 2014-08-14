@@ -1,0 +1,141 @@
+program untCorretorOrtografico;
+ 
+{$APPTYPE CONSOLE}
+{$R *.res}
+ 
+uses System.SysUtils, Xml.XMLDoc, Xml.XMLIntf, IdHTTP, System.Classes, WinApi.ActiveX,
+    System.RegularExpressions,IdGlobal;
+
+type
+
+/// <summary>
+/// Implementa o recurso de correção ortográfica oferecido pelo Google
+/// </summary>
+/// <remarks>
+/// Descende de TComponent para servir de base para o XMLDocument
+/// </remarks>
+/// <author>
+/// José Mário Silva Guedes - jmarioguedes@gmail.com - eugostododelphi.blogspot.com
+/// </author>
+TCorretor = class(TComponent)
+private
+/// <summary>
+/// Estrutura do documento XML
+/// </summary>
+  FXML: TXMLDocument;
+/// <summary>
+/// Comunicação HTTP
+/// </summary>
+  FHTTP: TidHTTP;
+public
+procedure AfterConstruction; override;
+/// <summary>
+/// Processa efetivamente o corretor ortográfico
+/// </summary>
+/// <param name="AEntrada">    /// Texto de entrada
+///     /// <param name="ASaida">    /// Possibilidades de correção
+///     /// <param name="AMotivo">    /// Motivo de um eventual insucesso
+///     /// <returns>
+/// Indica o sucesso da operação
+/// </returns>
+function Processar(AEntrada: string; ASaida: TStrings; AMotivo: string): Boolean;
+end;
+
+var
+  bRet     : Boolean;
+  oCorretor: TCorretor;
+  sEntrada : string;
+  slSaida  : TStringList;
+  sMotivo  : string;
+  sPalavra : string;
+  cSaida   : Char;
+{ TCorretor }
+
+procedure TCorretor.AfterConstruction;
+begin
+  inherited;
+  Self.FHTTP := TidHTTP.Create(Self);
+  Self.FXML := TXMLDocument.Create(TDataModule.Create(Self));
+end;
+
+function TCorretor.Processar(AEntrada: string; ASaida: TStrings; AMotivo: string): Boolean;
+const
+  C_URL = 'http://www.google.com/tbproxy/spell?lang=pt&;hl=pt';
+var
+  oRequest  : TStringStream;
+  oResponse : TStringStream;
+  sResponse : string;
+  sRequest  : string;
+  sResultado: string;
+  _raiz     : IXMLNode;
+  _texto    : IXMLNode;
+  _resultado: IXMLNode;
+  aPartes   : TArray<string>;
+begin
+  oRequest := nil;
+  oResponse := nil;
+  try
+{$REGION 'Preparando o pedido'}
+    Self.FXML.Active := False;
+    Self.FXML.Active := True;
+    Self.FXML.Version := '1.0';
+    Self.FXML.Encoding := 'UTF-16';
+
+    _raiz := Self.FXML.AddChild('spellrequest');
+    _raiz.Attributes['textalreadyclipped'] := '0';
+    _raiz.Attributes['ignoredups'] := '0';
+    _raiz.Attributes['ignoredigits'] := '1';
+    _raiz.Attributes['ignoreallcaps'] := '0';
+
+    _texto := Self.FXML.CreateNode('text');
+    _texto.Text := AEntrada;
+    _raiz.ChildNodes.Add(_texto);
+{$ENDREGION}
+{$REGION 'Gambiarra do UTF-8'}
+    Self.FXML.SaveToXML(sRequest);
+// http://www.caiooliveira.com.br/?p=422
+// http://qc.embarcadero.com/wc/qcmain.aspx?d=37433
+    sRequest := TRegEx.Replace(sRequest, 'UTF-16', 'UTF-8');
+    oRequest := TStringStream.Create;
+    oRequest.WriteString(sRequest);
+    oRequest.Seek(0, 0);
+{$ENDREGION}
+{$REGION 'Request\Response'}
+    Self.FHTTP.Request.Accept := 'text/xml';
+    Self.FHTTP.Request.ContentType := 'text/xml';
+    Self.FHTTP.Request.ContentEncoding := 'utf-8';
+    oResponse := TStringStream.Create;
+    Self.FHTTP.Post(C_URL, oRequest, oResponse);
+    sResponse := UTF8ToString(RawByteString(oResponse.DataString));
+    Self.FXML.Active := False;
+    Self.FXML.LoadFromXML(sResponse);
+{$ENDREGION}
+{$REGION 'Analisando a resposta'}
+    _resultado := Self.FXML.DocumentElement.ChildNodes.FindNode('c');
+    while (Assigned(_resultado)) do
+    begin
+      sResultado := _resultado.Text;
+      aPartes := TRegEx.Split(sResultado, #9);
+      for sResultado in aPartes do
+      begin
+        ASaida.Add(sResultado);
+      end;
+      _resultado := _resultado.NextSibling;
+    end;
+    Result := True;
+{$ENDREGION}
+  finally
+    if (Assigned(oRequest)) then
+    begin
+      oRequest.Free;
+    end;
+    if (Assigned(oResponse)) then
+    begin
+      oResponse.Free;
+    end;
+  end;
+end;
+
+
+
+
