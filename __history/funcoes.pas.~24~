@@ -128,7 +128,7 @@ procedure Configurar;
 var
   Dlg : TOpenDialog;
 begin
-  //Desativado, impl com db ou ini .
+
 { Dlg :=  TOpenDialog.Create(nil);
   Dlg.InitialDir := GetCurrentDir;
   dlg.Filter:= '*.bmp';

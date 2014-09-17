@@ -6,7 +6,7 @@ uses declaracoes,  ibquery, DB, Forms, sysutils, controls, windows, CharPrinter;
 type
   THPortas = (hCOM1,hCOM2, hCOM3, hCOM4, hLPT1, hLPT2, hEthernet, hUSB);
   THImpressora = (hBematech, hElgin, hDaruma, hEpson, hDiebold, hMatricial, hImpPadrao);
-  THModeloIMP = ( //Bematech
+  THModeloIMP = ( //Bematech    //              //                    //
                   hMP20MI   = 1,
                   hMP20CI   = 0,
                   hMP20TH   = 0,
@@ -56,7 +56,8 @@ Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, p
 Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
 Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
 Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
-procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);
+procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);overload;
+procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
 function  RetornaModelo(modelo : THModeloIMP):integer;
 procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
 procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
@@ -76,12 +77,14 @@ procedure informaDadosVenda(TDinheiro, TCheque, TCartao, TCliente, TDesconto, TR
 procedure informaTotais(Cancelados, VlrCancelados, ItmCancelados, VlrItmCancelados : Double);
 procedure zeraVariaveis();
 {$ENDREGION}
-function setImpressora(imp : integer) : THImpressora;
-function setModelo(modelo : integer) : THModeloIMP;
-function setPorta(porta : integer) : THPortas;
+function  setImpressora(imp : integer) : THImpressora;
+function  setModelo(modelo : integer) : THModeloIMP;
+function  setPorta(porta : integer) : THPortas;
 Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double);overload;
 Procedure AdicionaParcela ( vecto : String ; valor : Double);overload;
 procedure DadosTemporarios(dados, campo, valor :String);
+procedure AvancaLinhas(linhas : integer);
+procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
 
 implementation
 
@@ -112,7 +115,7 @@ begin
   if trim( atexto ) <> '' then
   begin
     aTexto := aTexto + #13 + #10;
-    Bematech_grande := FormataTX(pchar(aTexto), 3, 0, 0, 0, 0);
+    Bematech_grande := FormataTX(pchar(aTexto), 3, 0, 0, 1, 0);
   end;
 end;
 
@@ -246,9 +249,9 @@ begin
         Exit;
       end;
 
-//      if LeIni('IMPRESSORA','IMG') <> '' then
+//      if LeIni('IMG','IMAGEM') <> '' then
 //      begin
-//        ImprimeBmpEspecial( pchar(LeIni('IMPRESSORA','IMG')),
+//        ImprimeBmpEspecial( pchar(LeIni('IMG','IMAGEM')),
 //                                  strtoint(LeIni('IMPRESSORA','IMG_X')),
 //                                  strtoint(LeIni('IMPRESSORA','IMG_Y')),
 //                                  strtoint(LeIni('IMPRESSORA','IMG_A')));
@@ -269,10 +272,7 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN000'))) + LeIni('EMPRESA','LIN000'));
       Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN001'))) + LeIni('EMPRESA', 'LIN001'));
       Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN002'));
@@ -325,10 +325,7 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'item.txt');
       Rewrite(Arq);
       Write(Arq,  #18 + subs( alltrim( item ), 1, 50 ));
@@ -342,12 +339,13 @@ begin
       begin
         AssignFile(Arq, 'item.txt');
         Reset(Arq);
+        prn.OpenDoc('Itens');
         while not Eof(Arq) do
         begin
-
           Readln(Arq, aLinha);
           Prn_Normal( copy ( aLinha, 1, Length(aLinha)));
         end;
+        prn.CloseDoc;
         CloseFile(Arq);
         while FileExists('item.txt') do
           DeleteFile('item.txt');
@@ -396,11 +394,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
-    end;
     //impressorapadrao
-    hImpPadrao:begin
+    hImpPadrao,hDiebold:begin
       AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'item.txt');
       Rewrite(Arq);
       Write(Arq,  #18 + subs( alltrim( item ), 1, 50 ));
@@ -606,10 +601,7 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
-    end;
-    hImpPadrao:begin/////////
+    hImpPadrao, hDiebold:begin/////////
       case tipo of
         hVenda:begin
           Prn_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
@@ -770,10 +762,7 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       AssignFile(Arq, 'hCliente.txt');
       Rewrite(Arq);
       Writeln(Arq,'Codigo...:' + Ficha   );
@@ -810,10 +799,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
 
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       AssignFile(Arq, 'hCliente.txt');
       Rewrite(Arq);
       Writeln(Arq,'Codigo...:' + IntToStr(Ficha  ) );
@@ -837,7 +824,7 @@ begin
         hVenda:begin
           Bematech_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
           Bematech_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-          Bematech_Normal('Valor Total     '+ FormatFloat('#,##0.00',Total));
+          Bematech_Normal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
           Bematech_Normal(Traco(47));
           if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
           begin
@@ -912,6 +899,61 @@ begin
           Bematech_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
           Bematech_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
         end;
+        hVendaCliente:begin
+          Bematech_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
+          Bematech_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
+          Bematech_Normal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
+          Bematech_Normal(Traco(47));
+          Bematech_Normal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
+          Bematech_Normal('N   Vencimento       Valor');
+          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
+          begin
+            AssignFile(Arq, 'hparcelas.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hparcelas.txt') do
+              DeleteFile('hparcelas.txt');
+          end;
+          ComandoTx(#13#10,Length(#13#10));
+          if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
+          begin
+            AssignFile(Arq, 'hFormas.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hFormas.txt') do
+              DeleteFile('hFormas.txt');
+          end;
+
+          Bematech_Normal(Traco(47));
+
+          if Recebido > Total then
+            Bematech_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
+
+          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
+          begin
+            Bematech_Normal(Traco(47));
+            AssignFile(Arq, 'hCliente.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hCliente.txt') do
+              DeleteFile('hCliente.txt');
+          end;
+        end;
         hCarne:begin
 //            Bematech_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
         end;
@@ -932,10 +974,9 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
 
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
+      prn.OpenDoc('Fim');
       Prn_Normal(Traco(47));
       case tipo of
         hVenda:begin
@@ -959,27 +1000,137 @@ begin
 
           Prn_Normal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
           if Recebido > Total then
-            Prn_Normal('Troco'+ FormatFloat('#,##0.00',(Recebido-Total)));
-          end;
-          hConsignacao:begin
-            Prn_Normal('Valor da Total    '+ FormatFloat('#,##0.00',Total)) ;
-          end;
-          hRecibo:begin
-//            Prn_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
-          end;
-          hCarne:begin
-//            Prn_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
+            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
+
+          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
+          begin
+            Prn_Normal(Traco(47));
+            AssignFile(Arq, 'hCliente.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hCliente.txt') do
+              DeleteFile('hCliente.txt');
           end;
         end;
-        while FileExists('temp.txt') do
-          DeleteFile('temp.txt');
-        aSubTotal := 0;
+        hConsignacao:begin
+          Prn_Normal('Total Consignado.:     '+ aLinhaDireita(FormatFloat('#,##0.00',Total),20)) ;
+          Prn_Normal(Traco(47));
+          Prn_Normal('Consignado em nome de ' + LeIniTemp('CLIENTE','NOME'));
+          Prn_Normal('CPF/CNPJ.: '+ LeIniTemp('CLIENTE','CNPJCPF')+ '  RG/IE: ' + LeIniTemp('CLIENTE', 'IERG'));
+          if LeIniTemp('IMP','NUMERO') = '1' then
+          begin
+            prn_normal('');
+            prn_normal('');
+            prn_normal('');
+            Prn_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
+            Prn_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
+          end;
+        end;
+        hRecibo:begin
+          Prn_Normal('Recebemos de:' + LeIniTemp('CLIENTE', 'NOME'));
+          Prn_Normal('O valor de ' + FormatFloat('#,##0.00',Total));
+          Prn_Normal(LeIniTemp('PARCELAS', 'TOTALEXT'));
+          if Desconto > 0 then
+            Prn_Normal('C/ desconto de :' + FormatFloat('#,##0.00',Desconto));
+          Prn_Normal(Traco(47));
+          Prn_Normal('Referente a:');
+          Prn_Normal('Venda    Vencimento       Valor');
+          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
+          begin
+            AssignFile(Arq, 'hparcelas.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hparcelas.txt') do
+              DeleteFile('hparcelas.txt');
+          end;
+          Prn_Normal(Traco(47));
+          Prn_Normal('Forma de Pagamento: ' + LeIniTemp('PARCELAS','FORMA'));
+          prn_normal('');
+          prn_normal('');
+          Prn_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
+          Prn_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
+        end;
+        hVendaCliente:begin
+          Prn_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
+          Prn_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
+          Prn_Normal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
+          Prn_Normal(Traco(47));
+          Prn_Normal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
+          Prn_Normal('N   Vencimento       Valor');
+          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
+          begin
+            AssignFile(Arq, 'hparcelas.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hparcelas.txt') do
+              DeleteFile('hparcelas.txt');
+          end;
+          prn_normal('');
+          if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
+          begin
+            AssignFile(Arq, 'hFormas.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hFormas.txt') do
+              DeleteFile('hFormas.txt');
+          end;
+
+          Prn_Normal(Traco(47));
+
+          if Recebido > Total then
+            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
+
+          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
+          begin
+            Prn_Normal(Traco(47));
+            AssignFile(Arq, 'hCliente.txt');
+            Reset(Arq);
+            while not Eof(Arq) do
+            begin
+              Readln(Arq, aLinha);
+              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
+            end;
+            CloseFile(Arq);
+            while FileExists('hCliente.txt') do
+              DeleteFile('hCliente.txt');
+          end;
+        end;
+        hCarne:begin
+//            Prn_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
+        end;
+      end;
+      while FileExists('temp.txt') do
+        DeleteFile('temp.txt');
+      while FileExists('Temp.ini') do
+            DeleteFile('Temp.ini');
+      aSubTotal := 0;
+      prn.CloseDoc;
     end;
   end;
 
 end;
 
-procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);
+procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas); overload ;
 var
   Arq : TextFile;
   aLinha : String;
@@ -1002,10 +1153,45 @@ begin
 
     end;
     hDiebold:begin
-
+      prn_comando(#27+'&0'+#12 +#48);
     end;
     hImpPadrao:begin
-      prn_comando(#27+#112+#0+#60+#120);
+//      prn_comando(#27+#112+#0+#60+#120);
+      prn_comando(#27+#118+#140);
+
+    end;
+
+  end;
+end;
+
+procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
+var
+  Arq : TextFile;
+  aLinha : String;
+  aComando : String;
+begin
+  aComando := #27+#118+#140;
+  case setImpressora(impressora) of
+    hBematech:begin
+      AtivaImpressora(impressora,modelo,porta);
+      ComandoTX(aComando,Length(aComando));
+      FechaPorta;
+    end;
+    hElgin:begin
+
+    end;
+    hDaruma:begin
+
+    end;
+    hEpson:begin
+
+    end;
+    hDiebold:begin
+      prn_comando(#27+'&0'+#12 +#48);
+    end;
+    hImpPadrao:begin
+//      prn_comando(#27+#112+#0+#60+#120);
+      prn_comando(#27+#118+#140);
     end;
 
   end;
@@ -1045,11 +1231,12 @@ begin
     hElgin: ;
     hDaruma: ;
     hEpson: ;
-    hDiebold: ;
     hMatricial: ;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       aSubTotal := 0;
       aImpressora := impressora;
+      aModelo := modelo;
+      aPorta := porta;
       prn := TAdvancedPrinter.Create;
       prn.OpenDoc('Impressão Documentos');
     end;
@@ -1075,11 +1262,14 @@ begin
     hElgin: ;
     hDaruma: ;
     hEpson: ;
-    hDiebold: ;
     hMatricial: ;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       aSubTotal := 0;
       aImpressora := setImpressora(impressora);
+      aModelo := setModelo(modelo);
+      aPorta := setPorta(porta);
+      prn := TAdvancedPrinter.Create;
+      prn.OpenDoc('Impressão Documentos');
     end;
   end;
 end;
@@ -1115,10 +1305,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
 
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'hFormas.txt');
       if not FileExists(ExtractFilePath(Application.ExeName)+ 'hFormas.txt') then
         Rewrite(Arq)
@@ -1190,9 +1378,9 @@ begin
         AcionaGuilhotina(0);
         FechaPorta;
       end;
-      hImpPadrao:begin
+      hImpPadrao,hDiebold:begin
         AtivaImpressora(aImpressora,aModelo, aPorta);
-        prn_comando(#27#109);
+        prn_comando(#27+#109);
       end;
     end;
   end;
@@ -1216,7 +1404,7 @@ begin
       Bematech_Normal(Alinhacentro(LengTh('       Responsavel        '))+'       Responsavel        ');
       FechaPorta;
     end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
       Prn_Normal(alinhaCentro(Length('SANGRIA '))+'SANGRIA ');
       Prn_Normal(TracoDuplo(47));
@@ -1253,7 +1441,7 @@ begin
       Bematech_Normal(Alinhacentro(LengTh('       Responsavel        '))+'       Responsavel        ');
       FechaPorta;
     end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
       Prn_Normal(alinhaCentro(Length('SUPRIMENTO '))+'SUPRIMENTO ');
       Prn_Normal(TracoDuplo(47));
@@ -1292,7 +1480,7 @@ begin
       FechaPorta;
     end;
     //impressora padrao
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
       prn_Normal(alinhaCentro(Length('CANCELAMENTO '))+'CANCELAMENTO ');
       prn_Normal(TracoDuplo(47));
@@ -1330,7 +1518,7 @@ begin
       FechaPorta;
     end;
     //impressora padrão
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
       prn_Normal(alinhaCentro(Length('ABERTURA'))+'ABERTURA');
       prn_Normal(TracoDuplo(47));
@@ -1376,6 +1564,18 @@ begin
       aTotalCaixa := (valor + aDinheiro + aCartao + aCheque + aSuprimento) - aSangria;
 
       Bematech_Normal('= Valor Final em Caixa....:'+ aLinhaDireita(FormatFloat('#,##0.00',aTotalCaixa),20));
+
+      if valorinformado <> 0  then
+      begin
+       // ComandoTX(#13#10, Length(#13#10));
+        aValorFinal := (valor + aSuprimento + aTotalVendas + aTRecebido) - aSangria;
+        Bematech_Normal('Valor Informado...........:'+ aLinhaDireita(FormatFloat('#,##0.00',valorinformado),20));
+
+        aDiferenca := valorinformado - aValorFinal;
+
+        Bematech_Normal('Valor Diferenca...........:'+ aLinhaDireita(FormatFloat('#,##0.00',aDiferenca),20));
+      end;
+
       Bematech_Normal(Traco(47));
       Bematech_Normal(alinhaCentro(Length('Informativo de Vendas'))+ 'Informativo de Vendas');
       Bematech_Normal(Traco(47));
@@ -1392,19 +1592,6 @@ begin
       Bematech_Normal(Traco(47));
       Bematech_Normal('= Total em Descontos......:'+ aLinhaDireita(FormatFloat('#,##0.00',aTDesconto),20));
       Bematech_Normal('= Recebimento de Clientes.:'+ aLinhaDireita(FormatFloat('#,##0.00',aTRecebido),20));
-
-      if valorinformado <> 0  then
-      begin
-        ComandoTX(#13#10, Length(#13#10));
-        aValorFinal := (valor + aSuprimento + aTotalVendas + aTRecebido) - aSangria;
-        Bematech_Normal('Valor Final.............:'+ aLinhaDireita(FormatFloat('#,##0.00',aValorFinal),20));
-        Bematech_Normal('Valor Informado.........:'+ aLinhaDireita(FormatFloat('#,##0.00',valorinformado),20));
-
-        aDiferenca := valorinformado - aValorFinal;
-
-        Bematech_Normal('Valor Final.............:'+ aLinhaDireita(FormatFloat('#,##0.00',aDiferenca),20));
-      end;
-      ComandoTX(#13#10, Length(#13#10));
       Bematech_Normal(TracoDuplo(47));
       Bematech_Normal('Cupuns Cancelados.........:'+ aLinhaDireita(FormatFloat('###,#0',aCancelados),20));
       Bematech_Normal('Valor Cupons Cancelados...:'+ aLinhaDireita(FormatFloat('#,##0.00',aVlrCancelados),20));
@@ -1415,7 +1602,7 @@ begin
       FechaPorta;
     end;
     //impressora padrao
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
       Prn_Normal(alinhaCentro(Length('FECHAMENTO DO CAIXA'))+'FECHAMENTO DO CAIXA');
       Prn_Normal(TracoDuplo(47));
@@ -1437,6 +1624,18 @@ begin
       aTotalCaixa := (valor + aDinheiro + aCartao + aCheque + aSuprimento) - aSangria;
 
       Prn_Normal('= Valor Final em Caixa....:'+ aLinhaDireita(FormatFloat('#,##0.00',aTotalCaixa),20));
+
+      if valorinformado <> 0  then
+      begin
+     //  Prn_Normal('');
+        aValorFinal := (valor + aSuprimento + aTotalVendas + aTRecebido) - aSangria;
+        Prn_Normal('Valor Informado...........:'+ aLinhaDireita(FormatFloat('#,##0.00',valorinformado),20));
+
+        aDiferenca := valorinformado - aValorFinal;
+
+        Prn_Normal('Valor Diferenca...........:'+ aLinhaDireita(FormatFloat('#,##0.00',aDiferenca),20));
+      end;
+
       Prn_Normal(Traco(47));
       Prn_Normal(alinhaCentro(Length('Informativo de Vendas'))+ 'Informativo de Vendas');
       Prn_Normal(Traco(47));
@@ -1453,20 +1652,6 @@ begin
       Prn_Normal(Traco(47));
       Prn_Normal('= Total em Descontos......:'+ aLinhaDireita(FormatFloat('#,##0.00',aTDesconto),20));
       Prn_Normal('= Recebimento de Clientes.:'+ aLinhaDireita(FormatFloat('#,##0.00',aTRecebido),20));
-
-      if valorinformado <> 0  then
-      begin
-        Prn_Normal('');
-        aValorFinal := (valor + aSuprimento + aTotalVendas + aTRecebido) - aSangria;
-        Prn_Normal('Valor Final.............:'+ aLinhaDireita(FormatFloat('#,##0.00',aValorFinal),20));
-        Prn_Normal('Valor Informado.........:'+ aLinhaDireita(FormatFloat('#,##0.00',valorinformado),20));
-
-        aDiferenca := valorinformado - aValorFinal;
-
-        Prn_Normal('Valor Final.............:'+ aLinhaDireita(FormatFloat('#,##0.00',aDiferenca),20));
-      end;
-      Prn_Normal('');
-      Prn_Normal('');
       Prn_Normal(TracoDuplo(47));
       Prn_Normal('Cupuns Cancelados.........:'+ aLinhaDireita(FormatFloat('###,#0',aCancelados),20));
       Prn_Normal('Valor Cupons Cancelados...:'+ aLinhaDireita(FormatFloat('#,##0.00',aVlrCancelados),20));
@@ -1615,10 +1800,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
 
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'hparcelas.txt');
       if not FileExists(ExtractFilePath(Application.ExeName)+ 'hparcelas.txt') then
         Rewrite(Arq)
@@ -1658,10 +1841,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
 
-    end;
-    hImpPadrao:begin
+    hImpPadrao, hDiebold:begin
       AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'hparcelas.txt');
       if not FileExists(ExtractFilePath(Application.ExeName)+ 'hparcelas.txt') then
         Rewrite(Arq)
@@ -1677,26 +1858,75 @@ end;
 
 procedure Prn_Pequeno(aTexto : String);
 begin
-  prn.SendData(#15 + aTexto);
+  prn.SendData(#15 + aTexto + #10);
 end;
 
 procedure Prn_Normal(aTexto : String);
 begin
-  prn.SendData(#18 + aTexto);
+  prn.SendData(#18 + aTexto + #10);
 end;
 
 procedure Prn_Grande(aTexto : String);
 begin
-  prn.SendData(#14 + aTexto);
+  prn.SendData(#14 + aTexto + #10);
 end;
 
 procedure Prn_Comando(aTexto : String);
+var
+  cmd : TAdvancedPrinter;
 begin
-  prn.OpenDoc('Impressão Documentos');
-  prn.SendData(aTexto);
-  prn.CloseDoc;
+  cmd := TAdvancedPrinter.Create;
+  cmd.OpenDoc('CMD');
+  cmd.SendData(aTexto);
+  cmd.CloseDoc;
 end;
 
+procedure AvancaLinhas(linhas : integer);
+var
+ I : integer;
+begin
+  case aImpressora of
+    hBematech :begin
+      AtivaImpressora(aImpressora,aModelo,aPorta);
+      for I := 0 to linhas - 1 do
+        ComandoTX(#13#10, Length(#13#10));
+      fechaporta;
+    end;
+    hImpPadrao, hDiebold:begin
+      for I := 0 to linhas - 1 do
+        Prn_Comando(#10);
+    end;
+  end;
+end;
 
+procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
+var
+  I : integer;
+begin
+  case setImpressora(impressora) of
+    hBematech: begin
+      AtivaImpressora(impressora,modelo,porta);
+      Bematech_Pequeno('Fonte Pequena');
+      Bematech_Normal('Fonte Normal');
+      Bematech_Grande('Fonte Grande');
+      Bematech_Normal('Fim Teste');
+      for I := 0 to avanco - 1 do
+        ComandoTX(#13#10,Length(#13#10));
+      FechaPorta;
+    end;
+    hImpPadrao, hDiebold: begin
+      AtivaImpressora(impressora,modelo,porta);
+      prn_Pequeno('Fonte Pequena');
+      prn_Normal('Fonte Normal');
+      prn_Grande('Fonte grande');
+      prn_Normal('Fim Teste');
+      for I := 0 to avanco - 1 do
+        prn_normal('');
+      prn.CloseDoc;
+
+    end;
+  end;
+
+end;
 
 end.

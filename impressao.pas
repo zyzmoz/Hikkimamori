@@ -49,15 +49,16 @@ procedure Prn_Comando(aTexto : String);
 {$endregion}
 function  Bematech_lestatus():String;
 Procedure ImpCabecalho(modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
-function  RetornaStrPorta(porta : THPortas): String;
 Procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
 Procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
 Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
 Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
 Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
+{$REGION 'GAVETA'}
 procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);overload;
 procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
+{$ENDREGION}
 function  RetornaModelo(modelo : THModeloIMP):integer;
 procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
 procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
@@ -77,9 +78,12 @@ procedure informaDadosVenda(TDinheiro, TCheque, TCartao, TCliente, TDesconto, TR
 procedure informaTotais(Cancelados, VlrCancelados, ItmCancelados, VlrItmCancelados : Double);
 procedure zeraVariaveis();
 {$ENDREGION}
+{$REGION 'MISC'}
 function  setImpressora(imp : integer) : THImpressora;
 function  setModelo(modelo : integer) : THModeloIMP;
 function  setPorta(porta : integer) : THPortas;
+function  RetornaStrPorta(porta : THPortas): String;
+{$ENDREGION}
 Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double);overload;
 Procedure AdicionaParcela ( vecto : String ; valor : Double);overload;
 procedure DadosTemporarios(dados, campo, valor :String);
