@@ -1,5 +1,13 @@
 unit impressao;
-
+{
+  Função: Impressão de Pré Venda
+  Autor:  Daniel Cunha
+  Data:   10/06/2014
+  Funcionamento:
+    Bematech : Utiliza a DLL MP2032.dll
+    Impressora Padrão : Utiliza CharPrinter com comandos ESC/POS (Impressora padrão do Windows)
+    
+}
 interface
 uses declaracoes,  ibquery, DB, Forms, sysutils, controls, windows, CharPrinter;
 
@@ -31,8 +39,7 @@ var
   //informativo de Venda
   aTDinheiro, aTCheque, aTCartao, aTCliente, aTDesconto, aTRecebido : Double;
   //Totais
-  aCancelados, aVlrCancelados, aItmCancelados, aVlrItmCancelados : Double;
-
+  aCancelados, aVlrCancelados, aItmCancelados, aVlrItmCancelados : Double;  
   //configurações
   aImpressora : THImpressora;
   aModelo     : THModeloIMP;
@@ -49,16 +56,15 @@ procedure Prn_Comando(aTexto : String);
 {$endregion}
 function  Bematech_lestatus():String;
 Procedure ImpCabecalho(modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
+function  RetornaStrPorta(porta : THPortas): String;
 Procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
 Procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
 Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
 Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
 Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
-{$REGION 'GAVETA'}
 procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);overload;
 procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
-{$ENDREGION}
 function  RetornaModelo(modelo : THModeloIMP):integer;
 procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
 procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
@@ -72,18 +78,15 @@ procedure ImpSuprimento(caixa : integer; supervisor, operador : String; valor : 
 procedure CancelaCupom(caixa, cupom : integer; operador : String ; datahoravenda: TDateTime ;subtotal, desconto, total : Double);
 procedure ImpAbertura(caixa : integer; supervisor, operador : String; valor : Double);
 {$REGION 'FECHAMENTO'}
-procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; valor, valorinformado : Double);
+procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; aHora : TTime; valor, valorinformado : Double);
 procedure informaDadosCaixa(Dinheiro, Cheque, Cartao, Suprimento, Sangria : Double);
 procedure informaDadosVenda(TDinheiro, TCheque, TCartao, TCliente, TDesconto, TRecebido : Double);
 procedure informaTotais(Cancelados, VlrCancelados, ItmCancelados, VlrItmCancelados : Double);
 procedure zeraVariaveis();
 {$ENDREGION}
-{$REGION 'MISC'}
 function  setImpressora(imp : integer) : THImpressora;
 function  setModelo(modelo : integer) : THModeloIMP;
 function  setPorta(porta : integer) : THPortas;
-function  RetornaStrPorta(porta : THPortas): String;
-{$ENDREGION}
 Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double);overload;
 Procedure AdicionaParcela ( vecto : String ; valor : Double);overload;
 procedure DadosTemporarios(dados, campo, valor :String);
@@ -371,7 +374,7 @@ begin
       Write(Arq,  #$12 + '    ' + subs( barras, 1, 13 ) );
       Write(Arq,  #$12 + '   -' + FormatFloat('#,##0.00',qtde));
       Write(Arq,  #$12 + '   -' + FormatFloat('#,##0.00',unitario));
-      Write(Arq,#$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde)));
+      Write(Arq,  #$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde)));
       aSubTotal := aSubTotal - (unitario * qtde);
       CloseFile(Arq);
       if FileExists('item.txt') then
@@ -1541,7 +1544,7 @@ begin
   end;
 end;
 
-procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; valor, valorinformado : Double);
+procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; aHora: TTime; valor, valorinformado : Double);
 var
   aTotalCaixa, aTotalVendas, aValorFinal, aDiferenca : Double;
 begin
@@ -1552,8 +1555,9 @@ begin
       Bematech_Normal(TracoDuplo(47));
       Bematech_Normal('Caixa : ' + IntToStr(caixa)+ '  Controle : ' + IntToStr(controle));
       Bematech_Normal('Superv. Abertura  : ' + supervisorab);
-      Bematech_Normal('Data Abertura     : '+ DateToStr(aData));
+      Bematech_Normal('Data/Hora Abertura : '+ DateToStr(aData) +' as '+TimeToStr(aHora));
       Bematech_Normal('Superv. Fechamento: ' + supervisorf);
+      Bematech_Normal('Data/Hora Fechamento : '+ DateToStr(Date) +' as '+TimeToStr(Time));
       Bematech_Normal('Operador : ' + operador);
       Bematech_Normal(Traco(47));
       Bematech_Normal(alinhaCentro(Length('Dados do Caixa'))+ 'Dados do Caixa');

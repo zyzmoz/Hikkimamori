@@ -1,4 +1,9 @@
 unit funcoes;
+{ Função: Funções para Unit impressão
+  Autor:  Daniel Cunha
+  Data:   10/06/2014
+  Funcionamento: -
+}
 
 interface
   uses IniFiles, SysUtils,Variants, Classes, Graphics, Controls, Forms,StdCtrls,
@@ -128,8 +133,7 @@ procedure Configurar;
 var
   Dlg : TOpenDialog;
 begin
-  //Desativado, impl com db ou ini .
-{ Dlg :=  TOpenDialog.Create(nil);
+  Dlg :=  TOpenDialog.Create(nil);
   Dlg.InitialDir := GetCurrentDir;
   dlg.Filter:= '*.bmp';
   dlg.Execute;
@@ -140,6 +144,7 @@ begin
   Gravaini('IMPRESSORA','COLUNAS', InputBox('Configuração','Digite o tamanho da impressão (Default = 45)','45'));
   Gravaini('IMPRESSORA','GUILHOTINA', UpperCase(InputBox('Configuração','Impressora possui guilhotina?','N')));
   Gravaini('IMPRESSORA','GAVETA', UpperCase(InputBox('Configuração','Impressora Utiliza Gaveta?','N')));
+
   Gravaini('EMPRESA','FANTASIA', InputBox('Configuração','Fantasia da Empresa','Empresa'));
   Gravaini('EMPRESA','ENDERECO', InputBox('Configuração','Endereço','Endereço'));
   Gravaini('EMPRESA','NUMERO', InputBox('Configuração','Numero','1234'));
@@ -150,7 +155,6 @@ begin
   Gravaini('EMPRESA','EMAIL', InputBox('Configuração','Email','email@mail.com'));
   Gravaini('EMPRESA','SITE', InputBox('Configuração','Site','www.site.com'));
   ShowMessage('Configuração Realizada com sucesso!');
-  }
 
 end;
 
@@ -160,7 +164,6 @@ var
   caminho : String;
 begin
   caminho := ExtractFilePath(ParamStr(0));
-
   ArqIni := TIniFile.Create(caminho + 'Temp.ini');
   try
     ArqIni.WriteString( dados, campo, aTexto);
