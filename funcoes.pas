@@ -7,7 +7,7 @@ unit funcoes;
 
 interface
   uses IniFiles, SysUtils,Variants, Classes, Graphics, Controls, Forms,StdCtrls,
-  ExtCtrls, Dialogs;
+  ExtCtrls, Dialogs, idtcpclient;
 
 function Traco ( aTamanho : integer ) : string;
 function TracoDuplo ( aTamanho : integer ) : string;
@@ -21,6 +21,7 @@ function LeIniTemp( dados, campo : string): string;
 function Alltrim(const Search: string): string;
 function RoundSemArredondar(valor : Double):Double;
 procedure Configurar;
+Function serverisrunning(AHost: String; Aport:Integer) : Boolean;
 
 implementation
 
@@ -200,9 +201,29 @@ begin
     centavos := '0' + copy(FloatToStr(valor),Pos(',',FloatToStr(valor)),3)
   else
     centavos := '0,00';
-  RoundSemArredondar := StrToFloat(reais) + StrToFloat(Centavos);
+  if copy(FloatToStr(valor),1, 1) = '-' then
+    RoundSemArredondar := StrToFloat(reais) - StrToFloat(Centavos)
+  else
+    RoundSemArredondar := StrToFloat(reais) + StrToFloat(Centavos);
 
 end;
+
+Function serverisrunning(AHost: String; Aport:Integer) : Boolean;
+Begin
+  with tidtcpclient.create(nil) do begin
+    Host:=AHost;
+    Port:=Aport;
+    Result:=True;
+    Try
+      Connect;
+      Disconnect;
+    Except
+      Result:=False;
+    end;
+    Free;
+  end;
+end;
+
 
 
 end.

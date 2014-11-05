@@ -26,7 +26,7 @@ type
                   hMP2500TH = 8,
                   //Matricial
                   hGenericText);
-  THTipoImp = (hVenda, hRVenda, hConsignacao, hRecibo, hCarne, hVendaCliente, hRVendaCliente,
+  THTipoImp = (hVenda, hRVenda, hConsignacao, hRecibo, hRRecibo, hCarne, hVendaCliente, hRVendaCliente,
             hPromissoria, hRpromissoria);
 
 var
@@ -69,6 +69,7 @@ function  RetornaModelo(modelo : THModeloIMP):integer;
 procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
 procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
 procedure IniciaImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String);
+procedure IniciaRImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String; data: Tdate; hora : TTime);
 Procedure AdicionaForma (forma : String; valor : Double);
 procedure ImprimeBarras(aCodigo : String);
 procedure ImprimeQR(aCodigo : String);
@@ -268,6 +269,7 @@ begin
       Bematech_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN002'));
       Bematech_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN003'))) + LeIni('EMPRESA','LIN003'));
       Bematech_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN004'))) + LeIni('EMPRESA','LIN004'));
+      Bematech_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN004'))) + LeIni('EMPRESA','LIN005'));
       Bematech_Normal( TracoDuplo(47));
     end;
     hElgin:begin
@@ -285,6 +287,8 @@ begin
       Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN002'));
       Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN003'))) + LeIni('EMPRESA','LIN003'));
       Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN004'))) + LeIni('EMPRESA','LIN004'));
+      Prn_Normal(alinhaCentro(Length(LeIni('EMPRESA','LIN005'))) + LeIni('EMPRESA','LIN005'));
+
       Prn_Normal(TracoDuplo(47));
     end;
   end;
@@ -594,7 +598,13 @@ begin
           Bematech_Normal('PDV : ' + IntToStr(pdv));
           Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
           Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-
+        end;
+        hRRecibo:begin
+          Bematech_Normal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
+          Bematech_Normal(Traco(47));
+          Bematech_Normal('PDV : ' + IntToStr(pdv));
+          Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
+          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
         end;
         hCarne: Bematech_Normal('Carne...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
       end;
@@ -738,7 +748,21 @@ begin
           Prn_Normal(TracoDuplo(47));
           Prn_Normal('Consignacao...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
         end;
-        hRecibo: Prn_Normal('Recibo...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
+        hRecibo:begin
+          Prn_Normal(alinhaCentro(length('RECIBO')) + 'RECIBO');
+          Prn_Normal(Traco(47));
+          Prn_Normal('PDV : ' + IntToStr(pdv));
+          Prn_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
+          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
+        end;
+        hRRecibo:begin
+          Prn_Normal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
+          Prn_Normal(Traco(47));
+          Prn_Normal('PDV : ' + IntToStr(pdv));
+          Prn_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
+          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
+        end;
+//        hRecibo: Prn_Normal('Recibo...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
         hCarne: Prn_Normal('Carne...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
       end;
       prn.CloseDoc;
@@ -849,7 +873,7 @@ begin
 
           Bematech_Normal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
           if Recebido > Total then
-            Bematech_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
+            Bematech_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-(Total-desconto))));
 
           if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
           begin
@@ -1007,7 +1031,7 @@ begin
 
           Prn_Normal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
           if Recebido > Total then
-            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
+            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-(Total-Desconto))));
 
           if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
           begin
@@ -1285,8 +1309,13 @@ procedure IniciaImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String
 begin
   ImpCabecalho(aModelo,aImpressora,aPorta);
   ImprimeTipo(aImpressora, tipo,numeroimp,pdv,DateToStr(now),TimeToStr(now),vendedor);
-
 end;
+
+procedure IniciaRImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String; data: Tdate; hora : TTime);
+begin
+  ImpCabecalho(aModelo,aImpressora,aPorta);
+  ImprimeTipo(aImpressora, tipo,numeroimp,pdv,DateToStr(Data),TimeToStr(Hora),vendedor);
+end;                                                                                                           
 
 Procedure AdicionaForma (forma : String; valor : Double);
 var
@@ -1511,6 +1540,7 @@ begin
   case aImpressora of
     hBematech:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
+
       Bematech_Normal(alinhaCentro(Length('ABERTURA'))+'ABERTURA');
       Bematech_Normal(TracoDuplo(47));
       Bematech_Normal('Caixa : ' + IntToStr(caixa));
@@ -1527,6 +1557,7 @@ begin
     //impressora padrão
     hImpPadrao, hDiebold:begin
       ImpCabecalho(aModelo,aImpressora,aPorta);
+
       prn_Normal(alinhaCentro(Length('ABERTURA'))+'ABERTURA');
       prn_Normal(TracoDuplo(47));
       prn_Normal('Caixa : ' + IntToStr(caixa));
@@ -1616,8 +1647,9 @@ begin
       Prn_Normal(TracoDuplo(47));
       Prn_Normal('Caixa : ' + IntToStr(caixa)+ '  Controle : ' + IntToStr(controle));
       Prn_Normal('Superv. Abertura  : ' + supervisorab);
-      Prn_Normal('Data Abertura     : '+ DateToStr(aData));
+      Prn_Normal('Data/Hora Abertura : '+ DateToStr(aData) +' as '+TimeToStr(aHora));
       Prn_Normal('Superv. Fechamento: ' + supervisorf);
+      Prn_Normal('Data/Hora Fechamento : '+ DateToStr(Date) +' as '+TimeToStr(Time));
       Prn_Normal('Operador : ' + operador);
       Prn_Normal(Traco(47));
       Prn_Normal(alinhaCentro(Length('Dados do Caixa'))+ 'Dados do Caixa');
