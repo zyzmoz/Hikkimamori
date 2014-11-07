@@ -29,6 +29,38 @@ type
   THTipoImp = (hVenda, hRVenda, hConsignacao, hRecibo, hRRecibo, hCarne, hVendaCliente, hRVendaCliente,
             hPromissoria, hRpromissoria);
 
+  THDevice = record
+    aImp : THImpressora;
+    aMod : THModeloIMP;
+    aPrt : THPortas;
+  end;
+
+  THDadosCaixa = record
+    aDinheiro,
+    aCartao,
+    aCheque,
+    aSuprimento,
+    aSangria : Double;
+  end;
+
+  THInformativoVendas = record
+    aTDinheiro,
+    aTCheque,
+    aTCartao,
+    aTCliente,
+    aTDesconto,
+    aTRecebido : Double;
+  end;
+
+  THTotais = record
+    aCancelados,
+    aVlrCancelados,
+    aItmCancelados,
+    aVlrItmCancelados : Double;
+  end;
+
+
+
 var
   //para uso de imppadrao
   prn : TAdvancedPrinter;
@@ -39,7 +71,7 @@ var
   //informativo de Venda
   aTDinheiro, aTCheque, aTCartao, aTCliente, aTDesconto, aTRecebido : Double;
   //Totais
-  aCancelados, aVlrCancelados, aItmCancelados, aVlrItmCancelados : Double;  
+  aCancelados, aVlrCancelados, aItmCancelados, aVlrItmCancelados : Double;
   //configurações
   aImpressora : THImpressora;
   aModelo     : THModeloIMP;
@@ -53,19 +85,46 @@ procedure Prn_Pequeno(aTexto : String);
 procedure Prn_Normal(aTexto : String);
 procedure Prn_Grande(aTexto : String);
 procedure Prn_Comando(aTexto : String);
+
+//gaveta
+procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);overload;
+procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
+
+//Guilhotina
+procedure Guilhotina(corta : boolean);
+
+//comandos unificados
+
+procedure hPrintPequeno(aTexto : String);
+procedure hPrintNormal(aTexto : String);
+procedure hPrintGrande(aTexto : String);
+procedure hPrintComando(aTexto : String);
+procedure AvancaLinhas(linhas : integer);
+//procedure SetLinguagem();
+//procedure huAbreGaveta;
+//procedure CortaPapel;
+
 {$endregion}
+
+{$REGION 'CONFIGURAÇAO'}
+
 function  Bematech_lestatus():String;
-Procedure ImpCabecalho(modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
 function  RetornaStrPorta(porta : THPortas): String;
+function  setImpressora(imp : integer) : THImpressora;
+function  setModelo(modelo : integer) : THModeloIMP;
+function  setPorta(porta : integer) : THPortas;
+function  RetornaModelo(modelo : THModeloIMP):integer;
+procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
+
+{$ENDREGION}
+
+Procedure ImpCabecalho(modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
 Procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
 Procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
 Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
 Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
 Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
-procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);overload;
-procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
-function  RetornaModelo(modelo : THModeloIMP):integer;
 procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
 procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
 procedure IniciaImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String);
@@ -73,7 +132,6 @@ procedure IniciaRImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : Strin
 Procedure AdicionaForma (forma : String; valor : Double);
 procedure ImprimeBarras(aCodigo : String);
 procedure ImprimeQR(aCodigo : String);
-procedure Guilhotina(corta : boolean);
 procedure ImpSangria(caixa : integer; supervisor, operador : String; valor : Double);
 procedure ImpSuprimento(caixa : integer; supervisor, operador : String; valor : Double);
 procedure CancelaCupom(caixa, cupom : integer; operador : String ; datahoravenda: TDateTime ;subtotal, desconto, total : Double);
@@ -85,14 +143,10 @@ procedure informaDadosVenda(TDinheiro, TCheque, TCartao, TCliente, TDesconto, TR
 procedure informaTotais(Cancelados, VlrCancelados, ItmCancelados, VlrItmCancelados : Double);
 procedure zeraVariaveis();
 {$ENDREGION}
-function  setImpressora(imp : integer) : THImpressora;
-function  setModelo(modelo : integer) : THModeloIMP;
-function  setPorta(porta : integer) : THPortas;
+
 Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double);overload;
 Procedure AdicionaParcela ( vecto : String ; valor : Double);overload;
 procedure DadosTemporarios(dados, campo, valor :String);
-procedure AvancaLinhas(linhas : integer);
-procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
 
 implementation
 
@@ -386,8 +440,7 @@ begin
         AssignFile(Arq, 'item.txt');
         Reset(Arq);
         while not Eof(Arq) do
-        begin
-
+        begin  
           Readln(Arq, aLinha);
           Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
         end;
@@ -595,14 +648,14 @@ begin
         hRecibo:begin
           Bematech_Normal(alinhaCentro(length('RECIBO')) + 'RECIBO');
           Bematech_Normal(Traco(47));
-          Bematech_Normal('PDV : ' + IntToStr(pdv));
+          Bematech_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
           Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
           Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
         end;
         hRRecibo:begin
           Bematech_Normal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
           Bematech_Normal(Traco(47));
-          Bematech_Normal('PDV : ' + IntToStr(pdv));
+          Bematech_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
           Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
           Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
         end;
@@ -751,14 +804,14 @@ begin
         hRecibo:begin
           Prn_Normal(alinhaCentro(length('RECIBO')) + 'RECIBO');
           Prn_Normal(Traco(47));
-          Prn_Normal('PDV : ' + IntToStr(pdv));
+          Prn_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
           Prn_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
           Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
         end;
         hRRecibo:begin
           Prn_Normal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
           Prn_Normal(Traco(47));
-          Prn_Normal('PDV : ' + IntToStr(pdv));
+          Prn_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
           Prn_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
           Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
         end;
@@ -1968,5 +2021,93 @@ begin
   end;
 
 end;
+
+{$REGION 'COMANDOS UNIFICADOS'}
+
+procedure hPrintPequeno(aTexto : String);
+begin
+  case aImpressora of
+    hBematech:begin
+
+    end;
+    hElgin:begin
+
+    end;
+    hDaruma:begin
+
+    end;
+    hEpson:begin
+
+    end;
+    hDiebold:begin
+
+    end;
+  end;
+end;
+
+procedure hPrintNormal(aTexto : String);
+begin
+  case aImpressora of
+    hBematech:begin
+
+    end;
+    hElgin:begin
+
+    end;
+    hDaruma:begin
+
+    end;
+    hEpson:begin
+
+    end;
+    hDiebold:begin
+
+    end;
+  end;
+end;
+
+procedure hPrintGrande(aTexto : String);
+begin
+  case aImpressora of
+    hBematech:begin
+
+    end;
+    hElgin:begin
+
+    end;
+    hDaruma:begin
+
+    end;
+    hEpson:begin
+
+    end;
+    hDiebold:begin
+
+    end;
+  end;
+end;
+
+procedure hPrintComando(aTexto : String);
+begin
+  case aImpressora of
+    hBematech:begin
+
+    end;
+    hElgin:begin
+
+    end;
+    hDaruma:begin
+
+    end;
+    hEpson:begin
+
+    end;
+    hDiebold:begin
+
+    end;
+  end;
+end;
+{$ENDREGION}
+
 
 end.
