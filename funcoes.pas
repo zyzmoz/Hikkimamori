@@ -26,7 +26,7 @@ procedure Configurar;
 function serverisrunning(AHost: String; Aport:Integer) : Boolean;
 {$region 'http://www.swissdelphicenter.com/torry/showcode.php?id=660'}
 function GetDefaultPrinter: string;
-procedure SetDefaultPrinter1(PrinterName: string);
+procedure SetDefaultPrinter1(NewDefPrinter: string);
 procedure SetDefaultPrinter2(PrinterName: string);
 {$endregion}
 
