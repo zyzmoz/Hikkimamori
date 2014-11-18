@@ -6,6 +6,9 @@ unit impressao;
   Funcionamento:
     Bematech : Utiliza a DLL MP2032.dll
     Impressora Padrão : Utiliza CharPrinter com comandos ESC/POS (Impressora padrão do Windows)
+
+  18-11-2014 > Iniciada a mudança para comandos unificados, assim fica mais facil a manutenção
+      das impressoes;
     
 }
 interface

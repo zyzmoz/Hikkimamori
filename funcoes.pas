@@ -3,11 +3,13 @@ unit funcoes;
   Autor:  Daniel Cunha
   Data:   10/06/2014
   Funcionamento: -
+
+  18-11-2014 > Iniciada mudança para setar impressora padrao
 }
 
 interface
   uses IniFiles, SysUtils,Variants, Classes, Graphics, Controls, Forms,StdCtrls,
-  ExtCtrls, Dialogs, idtcpclient;
+  ExtCtrls, Dialogs, idtcpclient, Printers, Messages, Windows;
 
 function Traco ( aTamanho : integer ) : string;
 function TracoDuplo ( aTamanho : integer ) : string;
@@ -21,7 +23,12 @@ function LeIniTemp( dados, campo : string): string;
 function Alltrim(const Search: string): string;
 function RoundSemArredondar(valor : Double):Double;
 procedure Configurar;
-Function serverisrunning(AHost: String; Aport:Integer) : Boolean;
+function serverisrunning(AHost: String; Aport:Integer) : Boolean;
+{$region 'http://www.swissdelphicenter.com/torry/showcode.php?id=660'}
+function GetDefaultPrinter: string;
+procedure SetDefaultPrinter1(PrinterName: string);
+procedure SetDefaultPrinter2(PrinterName: string);
+{$endregion}
 
 implementation
 
@@ -208,7 +215,7 @@ begin
 
 end;
 
-Function serverisrunning(AHost: String; Aport:Integer) : Boolean;
+function serverisrunning(AHost: String; Aport:Integer) : Boolean;
 Begin
   with tidtcpclient.create(nil) do begin
     Host:=AHost;
@@ -222,6 +229,62 @@ Begin
     end;
     Free;
   end;
+end;
+
+function GetDefaultPrinter: string; // pega impressora padrão
+var
+  ResStr: array[0..255] of Char;
+begin
+  GetProfileString('Windows', 'device', '', ResStr, 255);
+  Result := StrPas(ResStr);
+end;
+
+procedure SetDefaultPrinter1(NewDefPrinter: string);
+var
+  ResStr: array[0..255] of Char;
+begin
+  StrPCopy(ResStr, NewdefPrinter);
+  WriteProfileString('windows', 'device', ResStr);
+  StrCopy(ResStr, 'windows');
+  SendMessage(HWND_BROADCAST, WM_WININICHANGE, 0, Longint(@ResStr));
+end;
+
+procedure SetDefaultPrinter2(PrinterName: string);  // seta impressora padrao
+var
+  I: Integer;
+  Device: PChar;
+  Driver: PChar;
+  Port: PChar;
+  HdeviceMode: THandle;
+  aPrinter: TPrinter;
+begin
+  Printer.PrinterIndex := -1;
+  GetMem(Device, 255);
+  GetMem(Driver, 255);
+  GetMem(Port, 255);
+  aPrinter := TPrinter.Create;
+  try
+    for I := 0 to Printer.Printers.Count - 1 do
+    begin
+      if Printer.Printers = PrinterName then
+      begin
+        aprinter.PrinterIndex := i;
+        aPrinter.getprinter(device, driver, port, HdeviceMode);
+        StrCat(Device, ',');
+        StrCat(Device, Driver);
+        StrCat(Device, Port);
+        WriteProfileString('windows', 'device', Device);
+        StrCopy(Device, 'windows');
+        SendMessage(HWND_BROADCAST, WM_WININICHANGE,
+          0, Longint(@Device));
+      end;
+    end;
+  finally
+    aPrinter.Free;
+  end;
+  FreeMem(Device, 255);
+  FreeMem(Driver, 255);
+  FreeMem(Port, 255);
 end;
 
 
