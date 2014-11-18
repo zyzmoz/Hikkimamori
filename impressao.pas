@@ -9,7 +9,7 @@ unit impressao;
     
 }
 interface
-uses declaracoes,  ibquery, DB, Forms, sysutils, controls, windows, CharPrinter;
+uses declaracoes, DB, Forms, sysutils, controls, windows, CharPrinter;
 
 type
   THPortas = (hCOM1,hCOM2, hCOM3, hCOM4, hLPT1, hLPT2, hEthernet, hUSB);
@@ -26,13 +26,22 @@ type
                   hMP2500TH = 8,
                   //Matricial
                   hGenericText);
-  THTipoImp = (hVenda, hRVenda, hConsignacao, hRecibo, hRRecibo, hCarne, hVendaCliente, hRVendaCliente,
-            hPromissoria, hRpromissoria);
+  THTipoImp = (hVenda,
+               hRVenda,
+               hConsignacao,
+               hRecibo,
+               hRRecibo,
+               hCarne,
+               hVendaCliente,
+               hRVendaCliente,
+               hPromissoria,
+               hRpromissoria);
 
   THDevice = record
     aImp : THImpressora;
     aMod : THModeloIMP;
     aPrt : THPortas;
+    aTsk : THTipoImp;
   end;
 
   THDadosCaixa = record
@@ -57,13 +66,14 @@ type
     aVlrCancelados,
     aItmCancelados,
     aVlrItmCancelados : Double;
-  end;
-
+  end;  
 
 
 var
   //para uso de imppadrao
   prn : TAdvancedPrinter;
+  //Para organizar as variaveis foi criado o record
+  device : THDevice;
   //aux cupom
   aSubTotal :Double;
   //dados caixa
@@ -99,11 +109,18 @@ procedure hPrintPequeno(aTexto : String);
 procedure hPrintNormal(aTexto : String);
 procedure hPrintGrande(aTexto : String);
 procedure hPrintComando(aTexto : String);
+procedure hPrintFechar();
 procedure AvancaLinhas(linhas : integer);
 //procedure SetLinguagem();
 //procedure huAbreGaveta;
 //procedure CortaPapel;
 
+//Ativação
+procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
+procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
+
+//Zera Variaveis
+procedure zeraVariaveis();
 {$endregion}
 
 {$REGION 'CONFIGURAÇAO'}
@@ -118,35 +135,48 @@ procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
 
 {$ENDREGION}
 
-Procedure ImpCabecalho(modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
-Procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
-Procedure RemoveItem (item, barras: String; qtde, unitario : Double);
-Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
-Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
-Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
-Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
-procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
-procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
+{$REGION 'IMPRESSAO'}
+procedure ImpCabecalho(modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
+procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
+procedure RemoveItem (item, barras: String; qtde, unitario : Double);
+procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
+
+procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
+procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
+
+{Manutenção Aqui}
+//Será retirado o tipo da impressao e passado para o tipo que iniciou
+procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
+{Fim Manutencão }
+
 procedure IniciaImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String);
 procedure IniciaRImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String; data: Tdate; hora : TTime);
-Procedure AdicionaForma (forma : String; valor : Double);
+
+
+procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double);overload;
+Procedure AdicionaParcela ( vecto : String ; valor : Double);overload;
+procedure DadosTemporarios(dados, campo, valor :String);
+
+
+procedure AdicionaForma (forma : String; valor : Double);
+{$ENDREGION}
+
+{$REGION 'CODIGOS'}
 procedure ImprimeBarras(aCodigo : String);
 procedure ImprimeQR(aCodigo : String);
+{$ENDREGION}
+
+{$REGION 'IMPRESSOES OPERACIONAIS'}
 procedure ImpSangria(caixa : integer; supervisor, operador : String; valor : Double);
 procedure ImpSuprimento(caixa : integer; supervisor, operador : String; valor : Double);
-procedure CancelaCupom(caixa, cupom : integer; operador : String ; datahoravenda: TDateTime ;subtotal, desconto, total : Double);
 procedure ImpAbertura(caixa : integer; supervisor, operador : String; valor : Double);
-{$REGION 'FECHAMENTO'}
+procedure CancelaCupom(caixa, cupom : integer; operador : String ; datahoravenda: TDateTime ;subtotal, desconto, total : Double);
 procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; aHora : TTime; valor, valorinformado : Double);
 procedure informaDadosCaixa(Dinheiro, Cheque, Cartao, Suprimento, Sangria : Double);
 procedure informaDadosVenda(TDinheiro, TCheque, TCartao, TCliente, TDesconto, TRecebido : Double);
 procedure informaTotais(Cancelados, VlrCancelados, ItmCancelados, VlrItmCancelados : Double);
-procedure zeraVariaveis();
 {$ENDREGION}
 
-Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double);overload;
-Procedure AdicionaParcela ( vecto : String ; valor : Double);overload;
-procedure DadosTemporarios(dados, campo, valor :String);
 
 implementation
 
@@ -1209,6 +1239,7 @@ begin
             DeleteFile('Temp.ini');
       aSubTotal := 0;
       prn.CloseDoc;
+     // FreeAndNil(prn);   Adicionar para minimizar o uso de memória, pois toda a ves que usa o CharPrinter pega a que iniciou
     end;
   end;
 
@@ -1413,12 +1444,7 @@ procedure ImprimeBarras(aCodigo : String);
 begin
   case aImpressora of
     hBematech:begin
-      ConfiguraCodigoBarras(StrToInt(LeIni('IMPRESSORA','ALTURA_BARRAS')),
-                StrToInt(LeIni('IMPRESSORA','LARGURA_BARRAS')),
-                StrToInt(LeIni('IMPRESSORA','IMPRIME_COD')),0,80);
-      ImprimeCodigoBarrasEAN13(Pchar(aCodigo));
 
-      FechaPorta;
     end;
     hElgin:begin
 
@@ -1903,11 +1929,7 @@ begin
       Writeln(Arq,{IntToStr(parcela)+ }'    ' + vecto +'       '+FormatFloat('#,##0.00',valor));
       CloseFile(Arq);
     end;
-
-  end;
-
-
-
+  end; 
 end;
 
 Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double); overload;
@@ -1993,32 +2015,14 @@ begin
 end;
 
 procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
-var
-  I : integer;
 begin
-  case setImpressora(impressora) of
-    hBematech: begin
-      AtivaImpressora(impressora,modelo,porta);
-      Bematech_Pequeno('Fonte Pequena');
-      Bematech_Normal('Fonte Normal');
-      Bematech_Grande('Fonte Grande');
-      Bematech_Normal('Fim Teste');
-      for I := 0 to avanco - 1 do
-        ComandoTX(#13#10,Length(#13#10));
-      FechaPorta;
-    end;
-    hImpPadrao, hDiebold: begin
-      AtivaImpressora(impressora,modelo,porta);
-      prn_Pequeno('Fonte Pequena');
-      prn_Normal('Fonte Normal');
-      prn_Grande('Fonte grande');
-      prn_Normal('Fim Teste');
-      for I := 0 to avanco - 1 do
-        prn_normal('');
-      prn.CloseDoc;
-
-    end;
-  end;
+  AtivaImpressora(impressora,modelo,porta);
+  hPrintPequeno('Fonte Pequena');
+  hPrintNormal('Fonte Normal');
+  hPrintGrande('Fonte Grande');
+  hPrintNormal('Fim Teste');
+  AvancaLinhas(avanco);
+  hPrintFechar();
 
 end;
 
@@ -2028,7 +2032,7 @@ procedure hPrintPequeno(aTexto : String);
 begin
   case aImpressora of
     hBematech:begin
-
+      Bematech_Pequeno(aTexto);
     end;
     hElgin:begin
 
@@ -2039,8 +2043,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
+    hImpPadrao,hDiebold:begin
+      Prn_Pequeno(aTexto);
     end;
   end;
 end;
@@ -2049,7 +2053,7 @@ procedure hPrintNormal(aTexto : String);
 begin
   case aImpressora of
     hBematech:begin
-
+      Bematech_Normal(aTexto);
     end;
     hElgin:begin
 
@@ -2060,8 +2064,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
+    hImpPadrao,hDiebold:begin
+      Prn_Normal(aTexto);
     end;
   end;
 end;
@@ -2070,7 +2074,7 @@ procedure hPrintGrande(aTexto : String);
 begin
   case aImpressora of
     hBematech:begin
-
+      Bematech_Grande(aTexto);
     end;
     hElgin:begin
 
@@ -2081,8 +2085,8 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
-
+    hImpPadrao,hDiebold:begin
+      Prn_Grande(aTexto);
     end;
   end;
 end;
@@ -2091,7 +2095,7 @@ procedure hPrintComando(aTexto : String);
 begin
   case aImpressora of
     hBematech:begin
-
+      ComandoTX(aTexto,Length(aTexto));
     end;
     hElgin:begin
 
@@ -2102,8 +2106,30 @@ begin
     hEpson:begin
 
     end;
-    hDiebold:begin
+    hImpPadrao,hDiebold:begin
+      Prn_Comando(aTexto);
+    end;
+  end;
+end;
 
+procedure hPrintFechar();
+begin
+  case aImpressora of
+    hBematech:begin
+      FechaPorta;
+    end;
+    hElgin:begin
+
+    end;
+    hDaruma:begin
+
+    end;
+    hEpson:begin
+
+    end;
+    hImpPadrao,hDiebold:begin
+      prn.CloseDoc;
+      FreeAndNil(prn);
     end;
   end;
 end;
