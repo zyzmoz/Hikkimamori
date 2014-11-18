@@ -266,7 +266,7 @@ begin
   try
     for I := 0 to Printer.Printers.Count - 1 do
     begin
-      if Printer.Printers = PrinterName then
+      if Printer.Printers.Text = PrinterName then
       begin
         aprinter.PrinterIndex := i;
         aPrinter.getprinter(device, driver, port, HdeviceMode);
