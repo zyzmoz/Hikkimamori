@@ -75,22 +75,28 @@ type
 var
   //para uso de imppadrao
   prn : TAdvancedPrinter;
+
   //Para organizar as variaveis foi criado o record
   device : THDevice;
+
   //aux cupom
   aSubTotal :Double;
+
   //dados caixa
   aDinheiro, aCartao, aCheque, aSuprimento, aSangria : Double;
+
   //informativo de Venda
   aTDinheiro, aTCheque, aTCartao, aTCliente, aTDesconto, aTRecebido : Double;
+
   //Totais
   aCancelados, aVlrCancelados, aItmCancelados, aVlrItmCancelados : Double;
+
   //configurações
   aImpressora : THImpressora;
   aModelo     : THModeloIMP;
   aPorta      : THPortas;
 
-{$REGION 'Comandos Base'}
+{$REGION 'COMANDOS BASE'}
 function  Bematech_Pequeno(aTexto : string):integer;
 function  Bematech_Normal(aTexto : string):integer;
 function  Bematech_Grande(aTexto : string):integer;
@@ -332,8 +338,6 @@ begin
 end;
 
 Procedure ImpCabecalho (modelo : THModeloIMP; impressora : THImpressora; porta : THPortas);
-var
-  Arq : TextFile;
 begin
   case impressora of
     hBematech:begin
