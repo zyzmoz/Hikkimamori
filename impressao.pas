@@ -358,7 +358,11 @@ begin
   if FileExists('item.txt') then
   begin
     AssignFile(Arq, 'item.txt');
-    Reset(Arq);
+    try
+      Reset(Arq);
+    except
+
+    end;
     while not Eof(Arq) do
     begin
       Readln(Arq, aLinha);
@@ -387,7 +391,11 @@ begin
   if FileExists('item.txt') then
   begin
     AssignFile(Arq, 'item.txt');
-    Reset(Arq);
+    try
+      Reset(Arq);
+    except
+
+    end;
     while not Eof(Arq) do
     begin
       Readln(Arq, aLinha);
@@ -450,7 +458,11 @@ begin
       if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
       begin
         AssignFile(Arq, 'hCliente.txt');
-        Reset(Arq);
+        try
+          Reset(Arq);
+        except
+
+        end;
         while not Eof(Arq) do
         begin
           Readln(Arq, aLinha);
@@ -476,7 +488,11 @@ begin
       if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
       begin
         AssignFile(Arq, 'hCliente.txt');
-        Reset(Arq);
+        try
+          Reset(Arq);
+        except
+
+        end;
         while not Eof(Arq) do
         begin
           Readln(Arq, aLinha);
@@ -501,7 +517,11 @@ begin
       if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
       begin
         AssignFile(Arq, 'hparcelas.txt');
-        Reset(Arq);
+        try
+          Reset(Arq);
+        except
+
+        end;
         while not Eof(Arq) do
         begin
           Readln(Arq, aLinha);
@@ -1016,21 +1036,24 @@ begin
       hPrintNormal('N   Vencimento       Valor');
       if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
       begin
-        AssignFile(Arq, 'hparcelas.txt');
-        Reset(Arq);
+        AssignFile(Arq, ExtractFilePath(Application.ExeName)+'hparcelas.txt');
+        try
+          Reset(Arq);
+        except
+        end;
         while not Eof(Arq) do
         begin
           Readln(Arq, aLinha);
           hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
         end;
         CloseFile(Arq);
-        while FileExists('hparcelas.txt') do
+        while FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') do
           DeleteFile('hparcelas.txt');
       end;
       AvancaLinhas(1);
       if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
       begin
-        AssignFile(Arq, 'hFormas.txt');
+        AssignFile(Arq, ExtractFilePath(Application.ExeName)+'hFormas.txt');
         Reset(Arq);
         while not Eof(Arq) do
         begin
@@ -1038,7 +1061,7 @@ begin
           hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
         end;
         CloseFile(Arq);
-        while FileExists('hFormas.txt') do
+        while FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') do
           DeleteFile('hFormas.txt');
       end;
       hPrintNormal(Traco(47));
@@ -1049,7 +1072,7 @@ begin
       if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
       begin
         hPrintNormal(Traco(47));
-        AssignFile(Arq, 'hCliente.txt');
+        AssignFile(Arq, ExtractFilePath(Application.ExeName)+'hCliente.txt');
         Reset(Arq);
         while not Eof(Arq) do
         begin
@@ -1057,7 +1080,7 @@ begin
           hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
         end;
         CloseFile(Arq);
-        while FileExists('hCliente.txt') do
+        while FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') do
           DeleteFile('hCliente.txt');
       end;
     end;
@@ -1878,6 +1901,7 @@ begin
   else
     Append(Arq);
   Writeln(Arq,{IntToStr(parcela)+ }'    ' + vecto +'       '+FormatFloat('#,##0.00',valor));
+  CloseFile(Arq);
 end;
 
 Procedure AdicionaParcela (parcela : integer; vecto : String ; valor : Double); overload;
