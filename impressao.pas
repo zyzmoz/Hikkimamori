@@ -79,7 +79,7 @@ var
 
   //Para organizar as variaveis foi criado o record
   device : THDevice;
-
+  
   //aux cupom
   aSubTotal :Double;
 
