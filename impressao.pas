@@ -9,7 +9,13 @@ unit impressao;
 
   18-11-2014 > Iniciada a mudança para comandos unificados, assim fica mais facil a manutenção
       das impressoes;
-    
+  19-12-2014 > Iniciada mudança de arq TXT para record;
+
+  23-02-2015 > [Fabio Luiz Franzini] Acerto nas variaveis de fachamento do caixa
+
+  25-02-2015 > [Daniel Brandão da Cunha] Criada a função para imprimir detalhe da sangria
+
+  19-08-2015 > [Daniel Brandão da Cunha] Retidado CNPJ e IE do Cabeçalho 
 }
 interface
 uses declaracoes, DB, Forms, sysutils, controls, windows, CharPrinter;
@@ -48,6 +54,15 @@ type
     aTsk : THTipoImp;
   end;
 
+  THCostumer = record
+    aCod,
+    aName,
+    aAddr,
+    aProv,
+    aCPF,
+    aRG, aType : String;
+  end;
+
   THDadosCaixa = record
     aDinheiro,
     aCartao,
@@ -79,6 +94,9 @@ var
 
   //Para organizar as variaveis foi criado o record
   device : THDevice;
+
+  //para setar cliente
+  client : THCostumer;
   
   //aux cupom
   aSubTotal :Double;
@@ -144,12 +162,12 @@ procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
 procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
 
-procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String);overload;
-procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
+procedure InformaCliente(Ficha, Cliente, Endereco, Bairro, Tipo : String);overload;
+procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro, Tipo : String); overload ;
 
 {Manutenção Aqui}
 //Será retirado o tipo da impressao e passado para o tipo que iniciou
-procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
+Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double; OBS: String);
 {Fim Manutencão }
 
 procedure IniciaImp(tipo : THTipoImp; numeroimp, pdv :integer; vendedor : String);
@@ -162,6 +180,8 @@ procedure DadosTemporarios(dados, campo, valor :String);
 
 
 procedure AdicionaForma (forma : String; valor : Double);
+
+procedure DetalheSangria( Data, Hora, Operador : String; Valor : Double );
 {$ENDREGION}
 
 {$REGION 'CODIGOS'}
@@ -336,75 +356,36 @@ begin
   hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN001'))) + LeIni('EMPRESA','LIN001'));
   hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN002'));
   hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN003'))) + LeIni('EMPRESA','LIN003'));
-  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN004'))) + LeIni('EMPRESA','LIN004'));
-  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN004'))) + LeIni('EMPRESA','LIN005'));
+
+  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN005'))) + LeIni('EMPRESA','LIN005'));
   hPrintNormal( TracoDuplo(47));
 end;
 
 Procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
 var
-  Arq : TextFile;
   aLinha : String;
 begin
-  AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'item.txt');
-  Rewrite(Arq);
-  Write(Arq,  #18 + subs( alltrim( item ), 1, 50 ));
-  Write(Arq,  #$12 + '    ' + subs( barras, 1, 13 ) );
-  Write(Arq,  #$12 + '    ' + FormatFloat('#,##0.00',qtde));
-  Write(Arq,  #$12 + '    ' + FormatFloat('#,##0.00',unitario));
-  Write(Arq,#$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde)));
-  aSubTotal := aSubTotal + RoundSemArredondar(unitario * qtde);
-  CloseFile(Arq);
-  if FileExists('item.txt') then
-  begin
-    AssignFile(Arq, 'item.txt');
-    try
-      Reset(Arq);
-    except
+  aLinha := #18 + subs( alltrim( item ), 1, 50 ) +
+            #$12 + '    ' + subs( barras, 1, 13 ) +
+            #$12 + '    ' + FormatFloat('#,##0.00',qtde) +
+            #$12 + '    ' + FormatFloat('#,##0.00',unitario) +
+            #$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde));
+  aSubTotal := aSubTotal + (unitario * qtde);
+  hPrintNormal( copy ( aLinha, 1, Length(aLinha)));
 
-    end;
-    while not Eof(Arq) do
-    begin
-      Readln(Arq, aLinha);
-      hPrintNormal( copy ( aLinha, 1, Length(aLinha)));
-    end;
-    CloseFile(Arq);
-    while FileExists('item.txt') do
-      DeleteFile('item.txt');
-  end;
 end;
 
 Procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 var
-  Arq : TextFile;
   aLinha : String;
 begin
-  AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'item.txt');
-  Rewrite(Arq);
-  Write(Arq,  #18 + subs( alltrim( item ), 1, 50 ));
-  Write(Arq,  #$12 + '    ' + subs( barras, 1, 13 ) );
-  Write(Arq,  #$12 + '   -' + FormatFloat('#,##0.00',qtde));
-  Write(Arq,  #$12 + '   -' + FormatFloat('#,##0.00',unitario));
-  Write(Arq,  #$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde)));
+  aLinha := #18 + subs( alltrim( item ), 1, 50 )+
+            #$12 + '    ' + subs( barras, 1, 13 )+
+            #$12 + '   -' + FormatFloat('#,##0.00',qtde)+
+            #$12 + '   -' + FormatFloat('#,##0.00',unitario)+
+            #$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde));
   aSubTotal := aSubTotal - (unitario * qtde);
-  CloseFile(Arq);
-  if FileExists('item.txt') then
-  begin
-    AssignFile(Arq, 'item.txt');
-    try
-      Reset(Arq);
-    except
-
-    end;
-    while not Eof(Arq) do
-    begin
-      Readln(Arq, aLinha);
-      hPrintNormal( copy ( aLinha, 1, Length(aLinha)));
-    end;
-    CloseFile(Arq);
-    while FileExists('item.txt') do
-      DeleteFile('item.txt');
-  end;
+  hPrintNormal( copy ( aLinha, 1, Length(aLinha)));
 end;
 
 function RetornaStrPorta(porta : THPortas): String;
@@ -433,6 +414,7 @@ begin
       hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
       hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
+
       hPrintNormal('Descricao');
       hPrintNormal('   Cod. Barras        Qtd     Unit.    Total');
       hPrintNormal(Traco(47));
@@ -454,24 +436,28 @@ begin
 
       hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
       hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
-      hPrintNormal(Traco(47));
-      if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-      begin
-        AssignFile(Arq, 'hCliente.txt');
-        try
-          Reset(Arq);
-        except
 
-        end;
-        while not Eof(Arq) do
+      hPrintNormal(Traco(47));
+      if client.aName <> '' then
+      begin
+        if client.aType = 'F' then
         begin
-          Readln(Arq, aLinha);
-          hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
+          hPrintNormal('Matricula:' + client.aCod);
+          hPrintNormal('Funcionario..:' + client.aName);
+        end
+        else
+        begin
+          hPrintNormal('Codigo...:' + client.aCod);
+          hPrintNormal('Cliente..:' + client.aName);
         end;
-        CloseFile(Arq);
-        while FileExists('hCliente.txt') do
-          DeleteFile('hCliente.txt');
+        if client.aCPF <> '' then
+          hPrintNormal('CPF......:' + client.aCPF);
+        if client.aRG <> '' then
+          hPrintNormal('RG.......:' + client.aRG);
+        hPrintNormal('Endereco.:' + client.aAddr);
+        hPrintNormal('Bairro...:' + client.aProv);
       end;
+
       hPrintNormal(Traco(47));
       hPrintNormal('Descricao');
       hPrintNormal('   Cod. Barras        Qtd     Unit.    Total');
@@ -484,24 +470,23 @@ begin
       hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
       hPrintNormal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
-      hPrintNormal(Traco(47));
-      if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-      begin
-        AssignFile(Arq, 'hCliente.txt');
-        try
-          Reset(Arq);
-        except
 
-        end;
-        while not Eof(Arq) do
-        begin
-          Readln(Arq, aLinha);
-          hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
-        end;
-        CloseFile(Arq);
-        while FileExists('hCliente.txt') do
-          DeleteFile('hCliente.txt');
+      if client.aName <> '' then
+      begin
+        hPrintNormal(Traco(47));
+        hPrintNormal('Codigo...:' + client.aCod);
+        if client.aType = 'F' then
+          hPrintNormal('Funcionario..:' + client.aName)
+        else
+          hPrintNormal('Cliente..:' + client.aName);
+        if client.aCPF <> '' then
+          hPrintNormal('CPF......:' + client.aCPF);
+        if client.aRG <> '' then
+          hPrintNormal('RG.......:' + client.aRG);
+        hPrintNormal('Endereco.:' + client.aAddr);
+        hPrintNormal('Bairro...:' + client.aProv);
       end;
+
       hPrintNormal(Traco(47));
       hPrintNormal('Descricao');
       hPrintNormal('   Cod. Barras        Qtd     Unit.    Total');
@@ -552,8 +537,17 @@ begin
       AvancaLinhas(1);
       hPrintPequeno('Cod.: ' + LeIniTemp('CLIENTE','CODIGO'));
       hPrintPequeno('Nome.: ' + LeIniTemp('CLIENTE','NOME  '));
-      hPrintPequeno('CPF.: ' + LeIniTemp('CLIENTE','CPF'));
-      hPrintPequeno('RG.: ' + LeIniTemp('CLIENTE','RG'));
+      if Length(Trim(LeIniTemp('CLIENTE','CPF'))) <= 14  then
+      begin
+        hPrintPequeno('CPF.: ' + LeIniTemp('CLIENTE','CPF'));
+        hPrintPequeno('RG.: ' + LeIniTemp('CLIENTE','RG'));
+      end
+      else
+      begin
+        hPrintPequeno('CNPJ.: ' + LeIniTemp('CLIENTE','CPF'));
+        hPrintPequeno('IE.: ' + LeIniTemp('CLIENTE','RG'));
+      end;
+
       hPrintPequeno('Endereco.: ' + LeIniTemp('CLIENTE','END'));
       hPrintPequeno('Bairro.: ' + LeIniTemp('CLIENTE','BAIRRO'));
       hPrintPequeno('Cidade.: ' + LeIniTemp('CLIENTE','CCIDADEUF'));
@@ -599,352 +593,30 @@ begin
       hPrintNormal(Traco(47));
     end;
   end;
-{$REGION}
-//  case impressora of
-//    hBematech:begin
-//      case tipo of
-//        hVenda:begin
-//          Bematech_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Bematech_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Bematech_Normal(Traco(47));
-//          Bematech_normal('Descricao');
-//          Bematech_normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Bematech_Normal(Traco(47));
-//        end;
-//        hRVenda:begin
-//          Bematech_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Bematech_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
-//          Bematech_Normal(Traco(47));
-//          Bematech_normal('Descricao');
-//          Bematech_normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Bematech_Normal(Traco(47));
-//
-//        end;
-//        hVendaCliente:begin
-//          Bematech_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Bematech_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Bematech_Normal(Traco(47));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//          Bematech_Normal(Traco(47));
-//          Bematech_normal('Descricao');
-//          Bematech_normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Bematech_Normal(Traco(47));
-//        end;
-//        hRVendaCliente:begin
-//          Bematech_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Bematech_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
-//          Bematech_Normal(Traco(47));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//          Bematech_Normal(Traco(47));
-//          Bematech_normal('Descricao');
-//          Bematech_normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Bematech_Normal(Traco(47));
-//        end;
-//        hPromissoria:begin
-//          Bematech_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Bematech_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
-//          Bematech_Normal('N   Vencimento       Valor');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-//          begin
-//            AssignFile(Arq, 'hparcelas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hparcelas.txt') do
-//              DeleteFile('hparcelas.txt');
-//          end;
-//
-//          Bematech_Normal(Traco(47));
-//          Bematech_Pequeno('No pagamento em atraso, sera cobrado multa de 2% e juros de ');
-//          Bematech_Pequeno(' 0,33% ao dia');
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal(alinhaCentro(Length('*NOTA PROMISSORIA*'))+ '*NOTA PROMISSORIA*');
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Vencimento em '+ LeIniTemp('PARCELAS','VECTO'));
-//          Bematech_Normal('Valor em R$ '+ LeIniTemp('PARCELAS','TOTAL'));
-//          ComandoTX(#13#10,Length(#13#10));
-//          Bematech_Pequeno( 'A ' +LeIniTemp('PARCELAS','VECTOEXT'));
-//          Bematech_Pequeno('Pagarei esta NOTA PROMISSORIA a : ' + LeIniTemp('EMPRESA','RAZAO'));
-//          Bematech_Pequeno('CNPJ: ' +LeIniTemp('EMPRESA','CNPJ') + ' ou a sua ordem,');
-//          Bematech_Pequeno('em moeda corrente deste pais a quantia de');
-//          Bematech_Pequeno(  LeIniTemp('PARCELAS', 'TOTALEXT'));
-//          Bematech_Pequeno('Pagavel em ' + LeIniTemp('EMPRESA','CIDADEUF'));
-//          ComandoTX(#13#10,Length(#13#10));
-//          Bematech_Pequeno(LeIniTemp('PARCELAS','DATAEXT'));
-//          ComandoTX(#13#10,Length(#13#10));
-//          Bematech_Pequeno('Cod.: ' + LeIniTemp('CLIENTE','CODIGO'));
-//          Bematech_Pequeno('Nome.: ' + LeIniTemp('CLIENTE','NOME  '));
-//          Bematech_Pequeno('CPF.: ' + LeIniTemp('CLIENTE','CPF'));
-//          Bematech_Pequeno('RG.: ' + LeIniTemp('CLIENTE','RG'));
-//          Bematech_Pequeno('Endereco.: ' + LeIniTemp('CLIENTE','END'));
-//          Bematech_Pequeno('Bairro.: ' + LeIniTemp('CLIENTE','BAIRRO'));
-//          Bematech_Pequeno('Cidade.: ' + LeIniTemp('CLIENTE','CCIDADEUF'));
-//          while FileExists('Temp.ini') do
-//              DeleteFile('Temp.ini');
-//
-//        end;
-//        hConsignacao:begin
-//          Bematech_Normal(alinhaCentro(length('CONSIGNACAO')) + 'CONSIGNACAO');
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Consignacao.:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Bematech_Normal(Traco(47));
-//          Bematech_normal('Descricao');
-//          Bematech_normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Bematech_Normal(Traco(47));
-//        end;
-//        hRecibo:begin
-//          Bematech_Normal(alinhaCentro(length('RECIBO')) + 'RECIBO');
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//        end;
-//        hRRecibo:begin
-//          Bematech_Normal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Bematech_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-//          Bematech_Normal('Vendedor.: ' +  Trim(vendedor) );
-//        end;
-//        hCarne: Bematech_Normal('Carne...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//      end;
-//    end;
-//    hElgin:begin
-//
-//    end;
-//    hDaruma:begin
-//
-//    end;
-//    hEpson:begin
-//
-//    end;
-//    hImpPadrao, hDiebold:begin/////////
-//      case tipo of
-//        hVenda:begin
-//          Prn_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Prn_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Descricao');
-//          Prn_Normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Prn_Normal(Traco(47));
-//        end;
-//        hRVenda:begin
-//          Prn_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Prn_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Prn_Normal(Traco(47));
-//          Prn_Normal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Descricao');
-//          Prn_Normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Prn_Normal(Traco(47));
-//
-//        end;
-//        hVendaCliente:begin
-//          Prn_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Prn_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Prn_Normal(Traco(47));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Descricao');
-//          Prn_Normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Prn_Normal(Traco(47));
-//        end;
-//        hRVendaCliente:begin
-//          Prn_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//
-//          Prn_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Prn_Normal(Traco(47));
-//          Prn_Normal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
-//          Prn_Normal(Traco(47));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Descricao');
-//          Prn_Normal('   Cod. Barras        Qtd     Unit.    Total');
-//          Prn_Normal(Traco(47));
-//        end;
-//        hPromissoria:begin
-//          Prn_Normal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Prn_Normal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//          Prn_Normal(Traco(47));
-//          Prn_Normal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
-//          Prn_Normal('N   Vencimento       Valor');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-//          begin
-//            AssignFile(Arq, 'hparcelas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hparcelas.txt') do
-//              DeleteFile('hparcelas.txt');
-//          end;
-//
-//          Prn_Normal(Traco(47));
-//          Prn_Pequeno('No pagamento em atraso, sera cobrado multa de 2% e juros de ');
-//          Prn_Pequeno(' 0,33% ao dia');
-//          Prn_Normal(Traco(47));
-//          Prn_Normal(alinhaCentro(Length('*NOTA PROMISSORIA*'))+ '*NOTA PROMISSORIA*');
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Vencimento em '+ LeIniTemp('PARCELAS','VECTO'));
-//          Prn_Normal('Valor em R$ '+ LeIniTemp('PARCELAS','TOTAL'));
-//          Prn_Normal('');
-//          Prn_Pequeno( 'A ' +LeIniTemp('PARCELAS','VECTOEXT'));
-//          Prn_Pequeno('Pagarei esta NOTA PROMISSORIA a : ' + LeIniTemp('EMPRESA','RAZAO'));
-//          Prn_Pequeno('CNPJ: ' +LeIniTemp('EMPRESA','CNPJ') + ' ou a sua ordem,');
-//          Prn_Pequeno('em moeda corrente deste pais a quantia de');
-//          Prn_Pequeno(  LeIniTemp('PARCELAS', 'TOTALEXT'));
-//          Prn_Pequeno('Pagavel em ' + LeIniTemp('EMPRESA','CIDADEUF'));
-//          Prn_Normal('');
-//          Prn_Pequeno(LeIniTemp('PARCELAS','DATAEXT'));
-//          Prn_Normal('');
-//          Prn_Pequeno('Cod.: ' + LeIniTemp('CLIENTE','CODIGO'));
-//          Prn_Pequeno('Nome.: ' + LeIniTemp('CLIENTE','NOME  '));
-//          Prn_Pequeno('CPF.: ' + LeIniTemp('CLIENTE','CPF'));
-//          Prn_Pequeno('RG.: ' + LeIniTemp('CLIENTE','RG'));
-//          Prn_Pequeno('Endereco.: ' + LeIniTemp('CLIENTE','END'));
-//          Prn_Pequeno('Bairro.: ' + LeIniTemp('CLIENTE','BAIRRO'));
-//          Prn_Pequeno('Cidade.: ' + LeIniTemp('CLIENTE','CCIDADEUF'));
-//          while FileExists('Temp.ini') do
-//              DeleteFile('Temp.ini');
-//
-//        end;
-//        hConsignacao:begin
-//          Prn_Normal(alinhaCentro(length('CONSIGNACAO')) + 'CONSIGNACAO');
-//          Prn_Normal(TracoDuplo(47));
-//          Prn_Normal('Consignacao...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//        end;
-//        hRecibo:begin
-//          Prn_Normal(alinhaCentro(length('RECIBO')) + 'RECIBO');
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Prn_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//        end;
-//        hRRecibo:begin
-//          Prn_Normal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//          Prn_Normal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-//          Prn_Normal('Vendedor.: ' +  Trim(vendedor) );
-//        end;
-////        hRecibo: Prn_Normal('Recibo...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//        hCarne: Prn_Normal('Carne...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-//      end;
-//      prn.CloseDoc;
-//    end;
-//  end;
-{$ENDREGION}
 end;
 
-Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro : String); overload ;
-var
-  Arq : TextFile;
-begin
-   AssignFile(Arq, 'hCliente.txt');
-   Rewrite(Arq);
-   Writeln(Arq,'Codigo...:' + Ficha   );
-   WriteLn(Arq,'Cliente..:' + Cliente );
-   WriteLn(Arq,'Endereco.:' + Endereco);
-   WriteLn(Arq,'Bairro...:' + Bairro  );
-   CloseFile(Arq);
+Procedure InformaCliente(Ficha, Cliente, Endereco, Bairro, Tipo  : String); overload ;
+begin                                                     {C = Cliente, F = Funcionário}
+  client.aCod   := Ficha;
+  client.aName  := Cliente;
+  client.aAddr  := Endereco;
+  client.aProv  := Bairro;
+  client.aType  := Tipo;
+
 end;
 
-Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro : String); overload ;
-var
-  Arq : TextFile;
-begin
-  AssignFile(Arq, 'hCliente.txt');
-  Rewrite(Arq);
-  Writeln(Arq,'Codigo...:' + IntToStr(Ficha)   );
-  WriteLn(Arq,'Cliente..:' + Cliente );
-  WriteLn(Arq,'CPF......:' + CPF );
-  WriteLn(Arq,'RG.......:' + RG );
-  WriteLn(Arq,'Endereco.:' + Endereco);
-  WriteLn(Arq,'Bairro...:' + Bairro  );
-  CloseFile(Arq);
+Procedure InformaCliente(Ficha : integer ; Cliente, CPF, RG, Endereco, Bairro, Tipo : String); overload ;
+begin                                                                         {C = Cliente, F = Funcionário}
+  client.aCod   := IntToStr(Ficha);
+  client.aName  := Cliente;
+  client.aAddr  := Endereco;
+  client.aProv  := Bairro;
+  client.aCPF   := CPF;
+  client.aRG    := RG;
+  client.aType  := Tipo;
 end;
 
-Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double);
+Procedure FechaImpressao (tipo : THTipoImp ; Desconto, Acrescimo, Total, Recebido : Double; OBS: String);
 var
   Arq   : TextFile;
   aLinha : String;
@@ -968,24 +640,32 @@ begin
         CloseFile(Arq);
         while FileExists('hFormas.txt') do
           DeleteFile('hFormas.txt');
-      end;
+      end;                                                                                     { TODO : Acertar tipos de impressão }
       hPrintNormal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
       if Recebido > Total then
         hPrintNormal('Troco  '+ FormatFloat('#,##0.00',(Recebido-(Total-desconto))));
-      if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
+
+      if client.aName <> '' then
       begin
         hPrintNormal(Traco(47));
-        AssignFile(Arq, 'hCliente.txt');
-        Reset(Arq);
-        while not Eof(Arq) do
+        if client.aType = 'C' then
         begin
-          Readln(Arq, aLinha);
-          hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
+          hPrintNormal('Codigo...:' + client.aCod);
+          hPrintNormal('Cliente..:' + client.aName);
+        end
+        else
+        begin
+          hPrintNormal('Matricula:' + client.aCod);
+          hPrintNormal('Funcionario:' + client.aName);
         end;
-        CloseFile(Arq);
-        while FileExists('hCliente.txt') do
-          DeleteFile('hCliente.txt');
+        if client.aCPF <> '' then
+          hPrintNormal('CPF......:' + client.aCPF);
+        if client.aRG <> '' then
+          hPrintNormal('RG.......:' + client.aRG);
+        hPrintNormal('Endereco.:' + client.aAddr);
+        hPrintNormal('Bairro...:' + client.aProv);
       end;
+
     end;
     hConsignacao:begin
       hPrintNormal('Total Consignado.:     '+ aLinhaDireita(FormatFloat('#,##0.00',Total),20)) ;
@@ -1023,6 +703,13 @@ begin
       end;
       hPrintNormal(Traco(47));
       hPrintNormal('Forma de Pagamento: ' + LeIniTemp('PARCELAS','FORMA'));
+      if Length(OBS) > 0 then
+      begin
+        hPrintNormal(Traco(47));
+        hPrintNormal(' Observações');
+        hPrintNormal(OBS);
+        hPrintNormal(Traco(47));
+      end;
       AvancaLinhas(2);
       hPrintNormal(alinhaCentro(length('____________________________'))+ '____________________________');
       hPrintNormal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
@@ -1051,6 +738,7 @@ begin
           DeleteFile('hparcelas.txt');
       end;
       AvancaLinhas(1);
+      hPrintNormal(Traco(47));
       if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
       begin
         AssignFile(Arq, ExtractFilePath(Application.ExeName)+'hFormas.txt');
@@ -1064,25 +752,11 @@ begin
         while FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') do
           DeleteFile('hFormas.txt');
       end;
-      hPrintNormal(Traco(47));
 
       if Recebido > Total then
         hPrintNormal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
 
-      if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-      begin
-        hPrintNormal(Traco(47));
-        AssignFile(Arq, ExtractFilePath(Application.ExeName)+'hCliente.txt');
-        Reset(Arq);
-        while not Eof(Arq) do
-        begin
-          Readln(Arq, aLinha);
-          hPrintNormal ( copy ( aLinha, 1, Length(aLinha)));
-        end;
-        CloseFile(Arq);
-        while FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') do
-          DeleteFile('hCliente.txt');
-      end;
+{aqui havia uma reimpressao de cliente sendo que o mesmo´já  é impresso no imptipo}
     end;
     hCarne:begin
 //            hPrintNormal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
@@ -1098,320 +772,8 @@ begin
   while FileExists('Temp.ini') do
     DeleteFile('Temp.ini');
   aSubTotal := 0;
+  ZeroMemory(@client,SizeOf(client)); // limpa record
   hPrintFechar;
-{$REGION}
-//  case device.aImp of
-//    hBematech:begin
-//      Bematech_Normal(Traco(47));
-//      case tipo of
-//        hVenda:begin
-//          Bematech_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-//          Bematech_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-//          Bematech_Normal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
-//          Bematech_Normal(Traco(47));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
-//          begin
-//            AssignFile(Arq, 'hFormas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hFormas.txt') do
-//              DeleteFile('hFormas.txt');
-//          end;
-//
-//          Bematech_Normal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
-//          if Recebido > Total then
-//            Bematech_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-(Total-desconto))));
-//
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            Bematech_Normal(Traco(47));
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//        end;
-//        hConsignacao:begin
-//          Bematech_Normal('Total Consignado.:     '+ aLinhaDireita(FormatFloat('#,##0.00',Total),20)) ;
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Consignado em nome de ' + LeIniTemp('CLIENTE','NOME'));
-//          Bematech_Normal('CPF/CNPJ.: '+ LeIniTemp('CLIENTE','CNPJCPF')+ '  RG/IE: ' + LeIniTemp('CLIENTE', 'IERG'));
-//          if LeIniTemp('IMP','NUMERO') = '1' then
-//          begin
-//            ComandoTX(#13#10#13#10#13#10, length(#13#10#13#10#13#10));
-//            Bematech_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
-//            Bematech_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
-//          end;
-//        end;
-//        hRecibo:begin
-//          Bematech_Normal('Recebemos de:' + LeIniTemp('CLIENTE', 'NOME'));
-//          Bematech_Normal('O valor de ' + FormatFloat('#,##0.00',Total));
-//          Bematech_Normal(LeIniTemp('PARCELAS', 'TOTALEXT'));
-//          if Desconto > 0 then
-//            Bematech_Normal('C/ desconto de :' + FormatFloat('#,##0.00',Desconto));
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Referente a:');
-//          Bematech_Normal('Venda    Vencimento       Valor');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-//          begin
-//            AssignFile(Arq, 'hparcelas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hparcelas.txt') do
-//              DeleteFile('hparcelas.txt');
-//          end;
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal('Forma de Pagamento: ' + LeIniTemp('PARCELAS','FORMA'));
-//          ComandoTX(#13#10#13#10, Length(#13#10#13#10));
-//          Bematech_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
-//          Bematech_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
-//        end;
-//        hVendaCliente:begin
-//          Bematech_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-//          Bematech_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-//          Bematech_Normal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
-//          Bematech_Normal(Traco(47));
-//          Bematech_Normal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
-//          Bematech_Normal('N   Vencimento       Valor');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-//          begin
-//            AssignFile(Arq, 'hparcelas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hparcelas.txt') do
-//              DeleteFile('hparcelas.txt');
-//          end;
-//          ComandoTx(#13#10,Length(#13#10));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
-//          begin
-//            AssignFile(Arq, 'hFormas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hFormas.txt') do
-//              DeleteFile('hFormas.txt');
-//          end;
-//
-//          Bematech_Normal(Traco(47));
-//
-//          if Recebido > Total then
-//            Bematech_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
-//
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            Bematech_Normal(Traco(47));
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Bematech_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//        end;
-//        hCarne:begin
-////            Bematech_Normal('Valor da Venda'+ FormatFloat('#,##0.00',SubTotal));
-//        end;
-//      end;
-//      while FileExists('temp.txt') do
-//        DeleteFile('temp.txt');
-//      while FileExists('Temp.ini') do
-//            DeleteFile('Temp.ini');
-//      aSubTotal := 0;
-//      FechaPorta;
-//    end;
-//    hElgin:begin
-//
-//    end;
-//    hDaruma:begin
-//
-//    end;
-//    hEpson:begin
-//
-//    end;
-//
-//    hImpPadrao, hDiebold:begin
-//      prn.OpenDoc('Fim');
-//      Prn_Normal(Traco(47));
-//      case tipo of
-//        hVenda:begin
-//          Prn_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-//          Prn_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-//          Prn_Normal('Valor Total     '+ FormatFloat('#,##0.00',Total));
-//          Prn_Normal(Traco(47));
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
-//          begin
-//            AssignFile(Arq, 'hFormas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hFormas.txt') do
-//              DeleteFile('hFormas.txt');
-//          end;
-//
-//          Prn_Normal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
-//          if Recebido > Total then
-//            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-(Total-Desconto))));
-//
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            Prn_Normal(Traco(47));
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//        end;
-//        hConsignacao:begin
-//          Prn_Normal('Total Consignado.:     '+ aLinhaDireita(FormatFloat('#,##0.00',Total),20)) ;
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Consignado em nome de ' + LeIniTemp('CLIENTE','NOME'));
-//          Prn_Normal('CPF/CNPJ.: '+ LeIniTemp('CLIENTE','CNPJCPF')+ '  RG/IE: ' + LeIniTemp('CLIENTE', 'IERG'));
-//          if LeIniTemp('IMP','NUMERO') = '1' then
-//          begin
-//            prn_normal('');
-//            prn_normal('');
-//            prn_normal('');
-//            Prn_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
-//            Prn_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
-//          end;
-//        end;
-//        hRecibo:begin
-//          Prn_Normal('Recebemos de:' + LeIniTemp('CLIENTE', 'NOME'));
-//          Prn_Normal('O valor de ' + FormatFloat('#,##0.00',Total));
-//          Prn_Normal(LeIniTemp('PARCELAS', 'TOTALEXT'));
-//          if Desconto > 0 then
-//            Prn_Normal('C/ desconto de :' + FormatFloat('#,##0.00',Desconto));
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Referente a:');
-//          Prn_Normal('Venda    Vencimento       Valor');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-//          begin
-//            AssignFile(Arq, 'hparcelas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hparcelas.txt') do
-//              DeleteFile('hparcelas.txt');
-//          end;
-//          Prn_Normal(Traco(47));
-//          Prn_Normal('Forma de Pagamento: ' + LeIniTemp('PARCELAS','FORMA'));
-//          prn_normal('');
-//          prn_normal('');
-//          Prn_Normal(alinhaCentro(length('____________________________'))+ '____________________________');
-//          Prn_Normal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
-//        end;
-//        hVendaCliente:begin
-//          Prn_Normal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-//          Prn_Normal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-//          Prn_Normal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
-//          Prn_Normal(Traco(47));
-//          Prn_Normal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
-//          Prn_Normal('N   Vencimento       Valor');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hparcelas.txt') then
-//          begin
-//            AssignFile(Arq, 'hparcelas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hparcelas.txt') do
-//              DeleteFile('hparcelas.txt');
-//          end;
-//          prn_normal('');
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
-//          begin
-//            AssignFile(Arq, 'hFormas.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hFormas.txt') do
-//              DeleteFile('hFormas.txt');
-//          end;
-//
-//          Prn_Normal(Traco(47));
-//
-//          if Recebido > Total then
-//            Prn_Normal('Troco  '+ FormatFloat('#,##0.00',(Recebido-Total)));
-//
-//          if FileExists(ExtractFilePath(Application.ExeName)+'hCliente.txt') then
-//          begin
-//            Prn_Normal(Traco(47));
-//            AssignFile(Arq, 'hCliente.txt');
-//            Reset(Arq);
-//            while not Eof(Arq) do
-//            begin
-//              Readln(Arq, aLinha);
-//              Prn_Normal ( copy ( aLinha, 1, Length(aLinha)));
-//            end;
-//            CloseFile(Arq);
-//            while FileExists('hCliente.txt') do
-//              DeleteFile('hCliente.txt');
-//          end;
-//        end;
-//        hCarne:begin
-//
-//        end;
-//      end;
-//      while FileExists('temp.txt') do
-//        DeleteFile('temp.txt');
-//      while FileExists('Temp.ini') do
-//            DeleteFile('Temp.ini');
-//      aSubTotal := 0;
-//      prn.CloseDoc;
-//     // FreeAndNil(prn);   Adicionar para minimizar o uso de memória, pois toda  vez que usa o CharPrinter pega a que iniciou
-//    end;
-//  end;
-{$ENDREGION}
 end;
 
 procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas); overload ;
@@ -1497,11 +859,15 @@ begin
 end;
 
 procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas); overload ;
+var
+  teste : String;
 begin
   device.aImp := impressora;
   device.aMod := modelo;
   device.aPrt := porta;
 
+  teste :=  GetDefaultPrinter;
+  
   case impressora of
     hBematech:begin
       aSubTotal := 0;
@@ -1528,11 +894,15 @@ begin
 end;
 
 procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
+var
+  teste : String;
 begin
   device.aImp := setImpressora(impressora);
   device.aMod := setModelo(modelo);
   device.aPrt := setPorta(porta);
 
+  teste :=  GetDefaultPrinter;
+  
   case setImpressora(impressora) of
     hBematech:begin
       aSubTotal := 0;
@@ -1719,6 +1089,8 @@ end;
 procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; aHora: TTime; valor, valorinformado : Double);
 var
   aTotalCaixa, aTotalVendas, aValorFinal, aDiferenca : Double;
+  Arq : TextFile;
+  aTexto : String;
 begin
   ImpCabecalho;
   hPrintNormal(alinhaCentro(Length('FECHAMENTO DO CAIXA'))+'FECHAMENTO DO CAIXA');
@@ -1738,6 +1110,20 @@ begin
   hPrintNormal('+ Cartao..................:'+ aLinhaDireita(FormatFloat('#,##0.00',aCartao),20));
   hPrintNormal('+ Suprimento..............:'+ aLinhaDireita(FormatFloat('#,##0.00',aSuprimento),20));
   hPrintNormal('- Sangria.................:'+ aLinhaDireita(FormatFloat('#,##0.00',aSangria),20));
+  if FileExists(ExtractFilePath(Application.ExeName)+ 'hdetsangria.txt') then
+  begin
+    AssignFile(Arq, ExtractFilePath(Application.ExeName)+ 'hdetsangria.txt');
+    Reset(arq);
+    while not Eof(Arq) do
+    begin
+      Readln(Arq, aTexto);
+      hPrintNormal(aTexto);
+    end;
+    CloseFile(Arq);
+    DeleteFile('hdetsangria.txt');
+    hPrintNormal(TracoDuplo(47));
+  end;
+ 
 
   aTotalCaixa := (valor + aDinheiro + aCartao + aCheque + aSuprimento) - aSangria;
 
@@ -1745,10 +1131,9 @@ begin
 
   if valorinformado <> 0  then
   begin
-    aValorFinal := (valor + aSuprimento + aTotalVendas + aTRecebido) - aSangria;
     hPrintNormal('Valor Informado...........:'+ aLinhaDireita(FormatFloat('#,##0.00',valorinformado),20));
 
-    aDiferenca := valorinformado - aValorFinal;
+    aDiferenca := valorinformado - aTotalCaixa;
 
     hPrintNormal('Valor Diferenca...........:'+ aLinhaDireita(FormatFloat('#,##0.00',aDiferenca),20));
   end;
@@ -1760,14 +1145,16 @@ begin
   hPrintNormal('+ Vendas em Dinheiro......:'+ aLinhaDireita(FormatFloat('#,##0.00',aTDinheiro),20));
   hPrintNormal('+ Vendas em Cheque........:'+ aLinhaDireita(FormatFloat('#,##0.00',aTCheque),20));
   hPrintNormal('+ Vendas em Cartao........:'+ aLinhaDireita(FormatFloat('#,##0.00',aTCartao),20));
-  hPrintNormal('+ Vendas para Cliente.....:'+ aLinhaDireita(FormatFloat('#,##0.00',aTCliente),20));
+  hPrintNormal('+ Vendas para Cliente/Func:'+ aLinhaDireita(FormatFloat('#,##0.00',aTCliente),20));  //<<
 
   aTotalVendas := aTDinheiro + aTCheque + aTCartao + aTCliente;
 
   hPrintNormal('= Total de Vendas.........:'+ aLinhaDireita(FormatFloat('#,##0.00',aTotalVendas),20));
   hPrintNormal(Traco(47));
+
   hPrintNormal('= Total em Descontos......:'+ aLinhaDireita(FormatFloat('#,##0.00',aTDesconto),20));
   hPrintNormal('= Recebimento de Clientes.:'+ aLinhaDireita(FormatFloat('#,##0.00',aTRecebido),20));
+
   hPrintNormal(TracoDuplo(47));
   hPrintNormal('Cupuns Cancelados.........:'+ aLinhaDireita(FormatFloat('###,#0',aCancelados),20));
   hPrintNormal('Valor Cupons Cancelados...:'+ aLinhaDireita(FormatFloat('#,##0.00',aVlrCancelados),20));
@@ -1900,7 +1287,7 @@ begin
     Rewrite(Arq)
   else
     Append(Arq);
-  Writeln(Arq,{IntToStr(parcela)+ }'    ' + vecto +'       '+FormatFloat('#,##0.00',valor));
+  Writeln(Arq,'    ' + vecto +'       '+FormatFloat('#,##0.00',valor));
   CloseFile(Arq);
 end;
 
@@ -1971,6 +1358,21 @@ begin
   hPrintFechar();
 
 end;
+
+procedure DetalheSangria( Data, Hora, Operador : String; Valor : Double );
+var
+  Arq : TextFile;
+begin
+  AssignFile(Arq,ExtractFilePath(Application.ExeName)+ 'hdetsangria.txt');
+  if not FileExists(ExtractFilePath(Application.ExeName)+ 'hdetsangria.txt') then
+    Rewrite(Arq)
+  else
+    Append(Arq);
+  WriteLn(Arq, Data + '  ' + Hora + '  ' + copy(operador, 0, 15)+ '  R$ ' + FormatFloat('#,##0.00',Valor) );
+  CloseFile(Arq);
+end;
+
+
 
 {$REGION 'COMANDOS UNIFICADOS'}
 

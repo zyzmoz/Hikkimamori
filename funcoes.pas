@@ -9,7 +9,7 @@ unit funcoes;
 
 interface
   uses IniFiles, SysUtils,Variants, Classes, Graphics, Controls, Forms,StdCtrls,
-  ExtCtrls, Dialogs, idtcpclient, Printers, Messages, Windows;
+  ExtCtrls, Dialogs, idtcpclient, Printers, Messages, Windows, TLHelp32;
 
 function Traco ( aTamanho : integer ) : string;
 function TracoDuplo ( aTamanho : integer ) : string;
@@ -29,6 +29,7 @@ function GetDefaultPrinter: string;
 procedure SetDefaultPrinter1(NewDefPrinter: string);
 procedure SetDefaultPrinter2(PrinterName: string);
 {$endregion}
+function KillTask(ExeFileName: string): Integer;
 
 implementation
 
@@ -285,6 +286,33 @@ begin
   FreeMem(Device, 255);
   FreeMem(Driver, 255);
   FreeMem(Port, 255);
+end;
+
+function KillTask(ExeFileName: string): Integer;
+const
+  PROCESS_TERMINATE = $0001;
+var
+  ContinueLoop: BOOL;
+  FSnapshotHandle: THandle;
+  FProcessEntry32: TProcessEntry32;
+begin
+  Result := 0;
+  FSnapshotHandle := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  FProcessEntry32.dwSize := SizeOf(FProcessEntry32);
+  ContinueLoop := Process32First(FSnapshotHandle, FProcessEntry32);
+  while Integer(ContinueLoop) <> 0 do
+  begin
+    if ((UpperCase(ExtractFileName(FProcessEntry32.szExeFile)) =
+      UpperCase(ExeFileName)) or (UpperCase(FProcessEntry32.szExeFile) =
+      UpperCase(ExeFileName))) then
+      Result := Integer(TerminateProcess(
+                        OpenProcess(PROCESS_TERMINATE,
+                                    BOOL(0),
+                                    FProcessEntry32.th32ProcessID),
+                                    0));
+     ContinueLoop := Process32Next(FSnapshotHandle, FProcessEntry32);
+  end;
+  CloseHandle(FSnapshotHandle);
 end;
 
 
