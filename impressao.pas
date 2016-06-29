@@ -4,7 +4,7 @@ unit impressao;
   Autor:  Daniel Cunha
   Data:   10/06/2014
   Funcionamento:
-    Bematech : Utiliza a DLL MP2032.dll
+    Bematech   : Utiliza a DLL MP2032.dll
     Impressora Padrão : Utiliza CharPrinter com comandos ESC/POS (Impressora padrão do Windows)
 
   18-11-2014 > Iniciada a mudança para comandos unificados, assim fica mais facil a manutenção
@@ -51,6 +51,7 @@ type
     aImp : THImpressora;
     aMod : THModeloIMP;
     aPrt : THPortas;
+    aIP  : String;
     aTsk : THTipoImp;
   end;
 
@@ -120,8 +121,8 @@ procedure Prn_Grande(aTexto : String);
 procedure Prn_Comando(aTexto : String);
 
 //gaveta
-procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas);overload;
-procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
+procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas; ip : String);overload;
+procedure AbreGaveta(impressora, modelo, porta  : integer; ip : String);overload;
 
 //Guilhotina
 procedure Guilhotina(corta : boolean);
@@ -137,8 +138,8 @@ procedure hAbregaveta();
 procedure AvancaLinhas(linhas : integer);
 
 //Ativação
-procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas);overload;
-procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
+procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas ; IP : String);overload;
+procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer; IP : String);overload ;
 
 //Zera Variaveis
 procedure zeraVariaveis();
@@ -152,13 +153,13 @@ function  setImpressora(imp : integer) : THImpressora;
 function  setModelo(modelo : integer) : THModeloIMP;
 function  setPorta(porta : integer) : THPortas;
 function  RetornaModelo(modelo : THModeloIMP):integer;
-procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
+procedure TesteImpressora(impressora, modelo, porta, avanco :Integer; ip : String);
 
 {$ENDREGION}
 
 {$REGION 'IMPRESSAO'}
 procedure ImpCabecalho();
-procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
+procedure AdicionaItem (item, barras: String; qtde, unitario, total : Double);
 procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
 
@@ -181,7 +182,7 @@ procedure DadosTemporarios(dados, campo, valor :String);
 
 procedure AdicionaForma (forma : String; valor : Double);
 
-procedure DetalheSangria( Data, Hora, Operador : String; Valor : Double );
+procedure DetalheSangria( Data, Hora, Operador,Descricao : String; Valor : Double );
 {$ENDREGION}
 
 {$REGION 'CODIGOS'}
@@ -190,8 +191,8 @@ procedure ImprimeQR(aCodigo : String);
 {$ENDREGION}
 
 {$REGION 'IMPRESSOES OPERACIONAIS'}
-procedure ImpSangria(caixa : integer; supervisor, operador : String; valor : Double);
-procedure ImpSuprimento(caixa : integer; supervisor, operador : String; valor : Double);
+procedure ImpSangria(caixa : integer; supervisor, operador, descricao : String; valor : Double);
+procedure ImpSuprimento(caixa : integer; supervisor, operador, descricao : String; valor : Double);
 procedure ImpAbertura(caixa : integer; supervisor, operador : String; valor : Double);
 procedure CancelaCupom(caixa, cupom : integer; operador : String ; datahoravenda: TDateTime ;subtotal, desconto, total : Double);
 procedure ImpFechamento(caixa, controle : integer; supervisorab,supervisorf, operador : String; aData: TDate; aHora : TTime; valor, valorinformado : Double);
@@ -248,7 +249,7 @@ begin
     hLPT2: s_stporta:='lpt';
     hEthernet: s_stporta:='rede';
   end;
-  AtivaImpressora(device.aImp , device.aMod ,device.aPrt);
+  AtivaImpressora(device.aImp , device.aMod ,device.aPrt, device.aIP);
   aStatus := Le_Status();
 
 //******************IMPRESSORAS MP 20 CI E MI - CONEXÃO SERIAL******************
@@ -353,24 +354,23 @@ end;
 procedure ImpCabecalho ();
 begin
   hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN000'))) + LeIni('EMPRESA','LIN000'));
-  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN001'))) + LeIni('EMPRESA','LIN001'));
-  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN002'));
-  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN003'))) + LeIni('EMPRESA','LIN003'));
-
-  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN005'))) + LeIni('EMPRESA','LIN005'));
+  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN001')+ ' '+ LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN001')+' ' +LeIni('EMPRESA','LIN002'));
+//  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN002'))) + LeIni('EMPRESA','LIN002'));
+  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN003')+ ' '+LeIni('EMPRESA','LIN005'))) + LeIni('EMPRESA','LIN003')+' '+ LeIni('EMPRESA','LIN005'));
+//  hPrintNormal(alinhaCentro(Length(LeIni('EMPRESA','LIN005'))) + LeIni('EMPRESA','LIN005'));
   hPrintNormal( TracoDuplo(47));
 end;
 
-Procedure AdicionaItem (item, barras: String; qtde, unitario : Double);
+Procedure AdicionaItem (item, barras: String; qtde, unitario, total : Double);
 var
   aLinha : String;
 begin
-  aLinha := #18 + subs( alltrim( item ), 1, 50 ) +
-            #$12 + '    ' + subs( barras, 1, 13 ) +
-            #$12 + '    ' + FormatFloat('#,##0.00',qtde) +
-            #$12 + '    ' + FormatFloat('#,##0.00',unitario) +
-            #$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde));
-  aSubTotal := aSubTotal + (unitario * qtde);
+  aLinha := #18 + subs( alltrim( item ), 1, 47 ) +
+            #$12 + '   ' + subs( barras, 1, 13 ) +
+            #$12 + '   ' + FormatFloat('#,###0.000',qtde) +
+            #$12 + '   ' + FormatFloat('#,##0.00',unitario) +
+            #$12 + '   ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde));
+  aSubTotal := aSubTotal + total;//(unitario * qtde);
   hPrintNormal( copy ( aLinha, 1, Length(aLinha)));
 
 end;
@@ -379,11 +379,11 @@ Procedure RemoveItem (item, barras: String; qtde, unitario : Double);
 var
   aLinha : String;
 begin
-  aLinha := #18 + subs( alltrim( item ), 1, 50 )+
-            #$12 + '    ' + subs( barras, 1, 13 )+
-            #$12 + '   -' + FormatFloat('#,##0.00',qtde)+
-            #$12 + '   -' + FormatFloat('#,##0.00',unitario)+
-            #$12 + '    ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde));
+  aLinha := #18 + subs( alltrim( item ), 1, 47 )+
+            #$12 + '   ' + subs( barras, 1, 13 )+
+            #$12 + '  -' + FormatFloat('#,###0.000',qtde)+
+            #$12 + '  -' + FormatFloat('#,##0.00',unitario)+
+            #$12 + '   ' + FormatFloat('#,##0.00',RoundSemArredondar(unitario * qtde));
   aSubTotal := aSubTotal - (unitario * qtde);
   hPrintNormal( copy ( aLinha, 1, Length(aLinha)));
 end;
@@ -397,22 +397,26 @@ begin
     hCOM4:     RetornaStrPorta := 'COM4' ;
     hLPT1:     RetornaStrPorta := 'LPT1' ;
     hLPT2:     RetornaStrPorta := 'LPT2' ;
-    hEthernet: RetornaStrPorta := 'rede' ;
+    hEthernet: RetornaStrPorta := device.aIP ;
     hUSB:      RetornaStrPorta := 'USB';
   end;
 end;
 
-Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor : String);
+Procedure ImprimeTipo (impressora : THImpressora; tipo : THTipoImp ;numeroimp, pdv : integer; data, hora, vendedor  : String);
 var
   Arq : TextFile;
   aLinha : String;
 begin
   case device.aTsk of
     hVenda:begin
-      hPrintNormal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
+      hPrintNormal('Num:' +IntToStr(numeroimp) + ' PDV:' + IntToStr(pdv) + ' Data:' +  Trim(data) + ' ' + copy(hora,0,5));
+      if client.aName <> '' then
+        hPrintNormal('Cliente:' + client.aName);
 
-      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+      
+//      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
 
       hPrintNormal('Descricao');
@@ -420,10 +424,11 @@ begin
       hPrintNormal(Traco(47));
     end;
     hRVenda:begin
-      hPrintNormal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
+      hPrintNormal('Num:' +IntToStr(numeroimp) + ' PDV:' + IntToStr(pdv) + ' Data:' +  Trim(data) + ' ' + copy(hora,0,5));
 
-      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+//      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
       hPrintNormal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
       hPrintNormal(Traco(47));
@@ -432,10 +437,11 @@ begin
       hPrintNormal(Traco(47));
     end;
     hVendaCliente:begin
-      hPrintNormal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
+      hPrintNormal('Num:' +IntToStr(numeroimp) + ' PDV:' + IntToStr(pdv) + ' Data:' +  Trim(data) + ' ' + copy(hora,0,5));
 
-      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+//      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
 
       hPrintNormal(Traco(47));
       if client.aName <> '' then
@@ -464,10 +470,11 @@ begin
       hPrintNormal(Traco(47));
     end;
     hRVendaCliente:begin
-      hPrintNormal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
+      hPrintNormal('Num:' +IntToStr(numeroimp) + ' PDV:' + IntToStr(pdv) + ' Data:' +  Trim(data) + ' ' + copy(hora,0,5));
 
-      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+//      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
       hPrintNormal(alinhaCentro(Length('***REIMPRESSAO***'))+'***REIMPRESSAO***');
 
@@ -493,9 +500,10 @@ begin
       hPrintNormal(Traco(47));
     end;
     hPromissoria:begin
-      hPrintNormal('Numero...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
-      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+      hPrintNormal('Num:' +IntToStr(numeroimp) + ' PDV:' + IntToStr(pdv) + ' Data:' +  Trim(data) + ' ' + copy(hora,0,5));
+//      hPrintNormal('Data.....: ' +  Trim(data) + '   Hora.: ' + hora );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
       hPrintNormal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
       hPrintNormal('N   Vencimento       Valor');
@@ -560,7 +568,8 @@ begin
       hPrintNormal(Traco(47));
       hPrintNormal('Consignacao.:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
       hPrintNormal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
       hPrintNormal(Traco(47));
       hPrintNormal('Descricao');
       hPrintNormal('   Cod. Barras        Qtd     Unit.    Total');
@@ -571,14 +580,16 @@ begin
       hPrintNormal(Traco(47));
       hPrintNormal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
       hPrintNormal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
     end;
     hRRecibo:begin
       hPrintNormal(alinhaCentro(length('REIMPRESSAO RECIBO')) + 'REIMPRESSAO RECIBO');
       hPrintNormal(Traco(47));
       hPrintNormal('Recibo Nr  .:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
       hPrintNormal('Data.....   : ' +  Trim(data) + '        Hora.: ' + hora );
-      hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
+      if length(vendedor) > 0 then
+        hPrintNormal('Vendedor.: ' +  Trim(vendedor) );
     end;
     hCarne: hPrintNormal('Carne...:' +IntToStr(numeroimp) + '      PDV : ' + IntToStr(pdv));
 
@@ -624,9 +635,12 @@ begin
   hPrintNormal(Traco(47));
   case tipo of
     hVenda:begin
-      hPrintNormal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-      hPrintNormal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-      hPrintNormal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
+      hPrintNormal('Valor da Venda  '+ FormatFloat('#,##0.00',Total));
+      if Desconto > 0 then
+      begin
+        hPrintNormal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
+        hPrintNormal('Valor Total     '+ FormatFloat('#,##0.00',Total - desconto ));
+      end;
       hPrintNormal(Traco(47));
       if FileExists(ExtractFilePath(Application.ExeName)+'hFormas.txt') then
       begin
@@ -640,7 +654,8 @@ begin
         CloseFile(Arq);
         while FileExists('hFormas.txt') do
           DeleteFile('hFormas.txt');
-      end;                                                                                     { TODO : Acertar tipos de impressão }
+      end;
+                                             { DONE : Acertar tipos de impressão }
       hPrintNormal('Valor Total Recebido  '+ FormatFloat('#,##0.00',Recebido));
       if Recebido > Total then
         hPrintNormal('Troco  '+ FormatFloat('#,##0.00',(Recebido-(Total-desconto))));
@@ -715,9 +730,12 @@ begin
       hPrintNormal(alinhaCentro(length('        Responsavel         '))+ '        Responsavel         ');
     end;
     hVendaCliente:begin
-      hPrintNormal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-      hPrintNormal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-      hPrintNormal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
+      hPrintNormal('Valor da Venda  '+ FormatFloat('#,##0.00',Total));
+      if Desconto > 0 then
+      begin
+        hPrintNormal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
+        hPrintNormal('Valor Total     '+ FormatFloat('#,##0.00',Total - desconto ));
+      end;
       hPrintNormal(Traco(47));
       hPrintNormal(alinhaCentro(Length('***PRESTACOES***'))+ '***PRESTACOES***');
       hPrintNormal('N   Vencimento       Valor');
@@ -763,8 +781,11 @@ begin
     end;
     hComanda:begin
       hPrintNormal('Valor da Venda  '+ FormatFloat('#,##0.00',aSubTotal));
-      hPrintNormal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
-      hPrintNormal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
+      if Desconto > 0 then
+      begin
+        hPrintNormal('Valor Desconto  '+ FormatFloat('#,##0.00',Desconto));
+        hPrintNormal('Valor Total     '+ FormatFloat('#,##0.00',aSubTotal - desconto ));
+      end;
     end;
   end;
   while FileExists('temp.txt') do
@@ -776,7 +797,7 @@ begin
   hPrintFechar;
 end;
 
-procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas); overload ;
+procedure AbreGaveta(impressora : THImpressora; modelo : THModeloIMP; porta : THPortas; IP : String); overload ;
 var
   Arq : TextFile;
   aLinha : String;
@@ -785,7 +806,7 @@ begin
   aComando := #27+#118+#140;
   case impressora of
     hBematech:begin
-      AtivaImpressora(impressora,modelo,porta);
+      AtivaImpressora(impressora,modelo,porta, ip );
       ComandoTX(aComando,Length(aComando));
       FechaPorta;
     end;
@@ -810,7 +831,7 @@ begin
   end;
 end;
 
-procedure AbreGaveta(impressora, modelo, porta  : integer);overload;
+procedure AbreGaveta(impressora, modelo, porta  : integer; ip : String);overload;
 var
   Arq : TextFile;
   aLinha : String;
@@ -819,8 +840,9 @@ begin
   aComando := #27+#118+#140;
   case setImpressora(impressora) of
     hBematech:begin
-      AtivaImpressora(impressora,modelo,porta);
+      AtivaImpressora(impressora,modelo,porta, ip);
       ComandoTX(aComando,Length(aComando));
+
       FechaPorta;
     end;
     hElgin:begin
@@ -838,6 +860,7 @@ begin
     hImpPadrao:begin
 //      prn_comando(#27+#112+#0+#60+#120);
       prn_comando(#27+#118+#140);
+     
     end;
 
   end;
@@ -858,13 +881,14 @@ begin
   if modelo = hMP2100TH then RetornaModelo := 0;
 end;
 
-procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas); overload ;
+procedure AtivaImpressora(impressora : THImpressora; modelo: THModeloIMP; porta : THPortas; ip : String); overload ;
 var
   teste : String;
 begin
   device.aImp := impressora;
   device.aMod := modelo;
   device.aPrt := porta;
+  device.aIP  := ip;
 
   teste :=  GetDefaultPrinter;
   
@@ -879,6 +903,7 @@ begin
         Exit;
       end;
       ComandoTX(#29#249#32#0#27#116#8,Length(#29#249#32#0#27#116#8) );
+      ComandoTX(#27#51#18, Length(#27#51#18));
     end;
     hElgin: ;
     hDaruma: ;
@@ -889,17 +914,21 @@ begin
 
       prn := TAdvancedPrinter.Create;
       prn.OpenDoc('Impressão Documentos');
+      prn_Comando(#27+#51+#18);
     end;
   end;
 end;
 
-procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer);overload ;
+procedure AtivaImpressora(impressora : integer; modelo: integer; porta : integer; ip : String);overload ;
 var
   teste : String;
 begin
   device.aImp := setImpressora(impressora);
   device.aMod := setModelo(modelo);
   device.aPrt := setPorta(porta);
+  device.aIP  := ip;
+
+  
 
   teste :=  GetDefaultPrinter;
   
@@ -913,6 +942,7 @@ begin
         Exit;
       end;
       ComandoTX(#29#249#32#0#27#116#8,Length(#29#249#32#0#27#116#8) );
+      ComandoTX(#27#51#18, Length(#27#51#18));
     end;
     hElgin: ;
     hDaruma: ;
@@ -922,6 +952,7 @@ begin
       aSubTotal := 0;
       prn := TAdvancedPrinter.Create;
       prn.OpenDoc('Impressão Documentos');
+      prn_Comando(#27+#51+#18);
     end;
   end;
 end;
@@ -1003,46 +1034,52 @@ begin
   begin
     case device.aImp of
       hBematech:begin
-        AtivaImpressora(device.aImp,device.aMod, device.aPrt);
+        AtivaImpressora(device.aImp,device.aMod, device.aPrt, device.aIP);
         AcionaGuilhotina(0);
         FechaPorta;
       end;
       hImpPadrao,hDiebold:begin
-        AtivaImpressora(device.aImp,device.aMod, device.aPrt);
+        AtivaImpressora(device.aImp,device.aMod, device.aPrt, device.aIP);
         prn_comando(#27+#109);
       end;
     end;
   end;
 end;
 
-procedure ImpSangria(caixa : integer; supervisor, operador : String; valor : Double);
+procedure ImpSangria(caixa : integer; supervisor, operador, descricao : String; valor : Double);
 begin
   ImpCabecalho;
   hPrintNormal(alinhaCentro(Length('SANGRIA '))+'SANGRIA ');
   hPrintNormal(TracoDuplo(47));
-  hPrintNormal('Caixa :' + IntToStr(caixa));
-  hPrintNormal('Supervisor :' + supervisor);
-  hPrintNormal('Operador :' + operador);
+  hPrintNormal('PDV :' + IntToStr(caixa));
+  hPrintNormal('Supervisor.: ' + supervisor);
+  hPrintNormal('Operador...: ' + operador);
   hPrintNormal('Data: '+ DateToStr(Date)+ '    ' + 'Hora: '+ TimeToStr(Time));
   hPrintNormal(Traco(47));
-  hPrintNormal('Valor da Retirada:  ' + FormatFloat('#,##0.00',valor));
+  hPrintNormal('Valor da Retirada....:  ' + FormatFloat('#,##0.00',valor));
+  if Length(trim(descricao)) > 0 then
+    hPrintNormal('Descricao da Retirada:  ' + descricao);
+  hPrintNormal(Traco(47));
   AvancaLinhas(2);
   hPrintNormal(Alinhacentro(LengTh('__________________________'))+'__________________________');
   hPrintNormal(Alinhacentro(LengTh('       Responsavel        '))+'       Responsavel        ');
   hPrintFechar;
 end;
 
-procedure ImpSuprimento(caixa : integer; supervisor, operador : String; valor : Double);
+procedure ImpSuprimento(caixa : integer; supervisor, operador, descricao : String; valor : Double);
 begin
   ImpCabecalho;
   hPrintNormal(alinhaCentro(Length('SUPRIMENTO '))+'SUPRIMENTO ');
   hPrintNormal(TracoDuplo(47));
-  hPrintNormal('Caixa :' + IntToStr(caixa));
-  hPrintNormal('Supervisor :' + supervisor);
-  hPrintNormal('Operador :' + operador);
+  hPrintNormal('PDV :' + IntToStr(caixa));
+  hPrintNormal('Supervisor.: ' + supervisor);
+  hPrintNormal('Operador...: ' + operador);
   hPrintNormal('Data: '+ DateToStr(Date)+ '    ' + 'Hora: '+ TimeToStr(Time));
   hPrintNormal(Traco(47));
-  hPrintNormal('Valor do Suprimento:  ' + FormatFloat('#,##0.00',valor));
+  hPrintNormal('Valor do Suprimento....:  ' + FormatFloat('#,##0.00',valor));
+  if Length(trim(descricao)) > 0 then
+    hPrintNormal('Descricao do Suprimento:  ' + descricao);
+  hPrintNormal(Traco(47));
   AvancaLinhas(2);
   hPrintNormal(Alinhacentro(LengTh('__________________________'))+'__________________________');
   hPrintNormal(Alinhacentro(LengTh('       Responsavel        '))+'       Responsavel        ');
@@ -1054,12 +1091,17 @@ begin
   ImpCabecalho;
   hPrintNormal(alinhaCentro(Length('CANCELAMENTO '))+'CANCELAMENTO ');
   hPrintNormal(TracoDuplo(47));
-  hPrintNormal('Caixa.........:' + IntToStr(caixa));
+  hPrintNormal('PDV..........:' + IntToStr(caixa));
   hPrintNormal('Nr. Cancelado :' + IntToStr(cupom));
   hPrintNormal(Traco(47));
-  hPrintNormal('Sub Total....:     ' + FormatFloat('#,##0.00',subtotal));
-  hPrintNormal('Desconto.....:     ' + FormatFloat('#,##0.00',desconto));
-  hPrintNormal('Valor Total..:     ' + FormatFloat('#,##0.00',total));
+  if Desconto > 0 then
+  begin
+    hPrintNormal('Sub Total....:     ' + FormatFloat('#,##0.00',subtotal));
+    hPrintNormal('Desconto.....:     ' + FormatFloat('#,##0.00',desconto));
+    hPrintNormal('Valor Total..:     ' + FormatFloat('#,##0.00',total));
+  end
+  else
+    hPrintNormal('Valor Total..:     ' + FormatFloat('#,##0.00',total));
   hPrintNormal('Data da Venda:     ' + FormatDateTime('DD/MM/YYYY',datahoravenda));
   hPrintNormal('Data da Venda:     ' + FormatDateTime('DD/MM/YYYY',now));
   hPrintNormal('Operador.....:' + operador);
@@ -1073,9 +1115,9 @@ begin
   ImpCabecalho;
   hPrintNormal(alinhaCentro(Length('ABERTURA'))+'ABERTURA');
   hPrintNormal(TracoDuplo(47));
-  hPrintNormal('Caixa : ' + IntToStr(caixa));
-  hPrintNormal('Supervisor : ' + supervisor);
-  hPrintNormal('Operador : ' + operador);
+  hPrintNormal('PDV : ' + IntToStr(caixa));
+  hPrintNormal('Supervisor.: ' + supervisor);
+  hPrintNormal('Operador...: ' + operador);
   hPrintNormal('Data: '+ DateToStr(Date)+ '    ' + 'Hora: '+ TimeToStr(Time));
   hPrintNormal(Traco(47));
   hPrintNormal('Valor Abertura:  ' + FormatFloat('#,##0.00',valor));
@@ -1093,18 +1135,18 @@ var
   aTexto : String;
 begin
   ImpCabecalho;
-  hPrintNormal(alinhaCentro(Length('FECHAMENTO DO CAIXA'))+'FECHAMENTO DO CAIXA');
+  hPrintNormal(alinhaCentro(Length('FECHAMENTO DO PDV'))+'FECHAMENTO DO PDV');
   hPrintNormal(TracoDuplo(47));
-  hPrintNormal('Caixa : ' + IntToStr(caixa)+ '  Controle : ' + IntToStr(controle));
+  hPrintNormal('PDV : ' + IntToStr(caixa)+ '  Controle : ' + IntToStr(controle));
   hPrintNormal('Superv. Abertura  : ' + supervisorab);
   hPrintNormal('Data/Hora Abertura : '+ DateToStr(aData) +' as '+TimeToStr(aHora));
   hPrintNormal('Superv. Fechamento: ' + supervisorf);
   hPrintNormal('Data/Hora Fechamento : '+ DateToStr(Date) +' as '+TimeToStr(Time));
   hPrintNormal('Operador : ' + operador);
   hPrintNormal(Traco(47));
-  hPrintNormal(alinhaCentro(Length('Dados do Caixa'))+ 'Dados do Caixa');
+  hPrintNormal(alinhaCentro(Length('Dados do PDV'))+ 'Dados do PDV');
   hPrintNormal(Traco(47));
-  hPrintNormal('+ Valor Inicial do caixa..:' + aLinhaDireita(FormatFloat('#,##0.00',valor),20));
+  hPrintNormal('+ Valor Inicial do PDV....:' + aLinhaDireita(FormatFloat('#,##0.00',valor),20));
   hPrintNormal('+ Dinheiro................:'+ aLinhaDireita(FormatFloat('#,##0.00',aDinheiro),20));
   hPrintNormal('+ Cheque..................:'+ aLinhaDireita(FormatFloat('#,##0.00',aCheque),20));
   hPrintNormal('+ Cartao..................:'+ aLinhaDireita(FormatFloat('#,##0.00',aCartao),20));
@@ -1336,7 +1378,7 @@ var
 begin
   case device.aImp of
     hBematech :begin
-      AtivaImpressora(device.aImp,device.aMod,device.aPrt);
+      AtivaImpressora(device.aImp,device.aMod,device.aPrt,device.aIP);
       for I := 0 to linhas - 1 do
         ComandoTX(#13#10, Length(#13#10));
     end;
@@ -1347,9 +1389,9 @@ begin
   end;
 end;
 
-procedure TesteImpressora(impressora, modelo, porta, avanco :Integer);
+procedure TesteImpressora(impressora, modelo, porta, avanco :Integer; ip : String);
 begin
-  AtivaImpressora(impressora,modelo,porta);
+  AtivaImpressora(impressora,modelo,porta, ip);
   hPrintPequeno('Fonte Pequena');
   hPrintNormal('Fonte Normal');
   hPrintGrande('Fonte Grande');
@@ -1359,7 +1401,7 @@ begin
 
 end;
 
-procedure DetalheSangria( Data, Hora, Operador : String; Valor : Double );
+procedure DetalheSangria( Data, Hora, Operador, Descricao : String; Valor : Double );
 var
   Arq : TextFile;
 begin
@@ -1368,7 +1410,7 @@ begin
     Rewrite(Arq)
   else
     Append(Arq);
-  WriteLn(Arq, Data + '  ' + Hora + '  ' + copy(operador, 0, 15)+ '  R$ ' + FormatFloat('#,##0.00',Valor) );
+  WriteLn(Arq, Data + '  ' + Hora + '  ' + copy(operador, 0, 15)+ '  R$ ' + FormatFloat('#,##0.00',Valor) + ' ' + Descricao );
   CloseFile(Arq);
 end;
 
@@ -1484,7 +1526,7 @@ end;
 
 procedure hAbregaveta();
 begin
-  AbreGaveta(device.aImp,device.aMod,device.aPrt);
+  AbreGaveta(device.aImp,device.aMod,device.aPrt, device.aIP);
 end;
 {$ENDREGION}
 
